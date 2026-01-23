@@ -4,7 +4,7 @@ CREATE TYPE ROLE AS enum (
 );
 
 CREATE TABLE users (
-  id bigserial PRIMARY KEY,
+  id uuid DEFAULT gen_random_uuid (),
   email text NOT NULL,
   first_name text NOT NULL,
   last_name text NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE tracks (
   href text NOT NULL,
   image_url text,
   raw jsonb NOT NULL,
-  updated_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE playlist_tracks (
