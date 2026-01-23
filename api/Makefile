@@ -8,3 +8,8 @@ build: clean
 clean:
 	@echo "Cleaning bin directory"
 	@rm bin/* || true
+
+.PHONY: fmt
+fmt:
+	@echo "Formatting sql"
+	pg_format -i internal/database/sql/schema.sql
