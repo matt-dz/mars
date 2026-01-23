@@ -12,6 +12,12 @@ clean:
 .PHONY: fmt
 fmt: sql-fmt
 	@echo "Formatting..."
+	golangci-lint run
+
+.PHONY: lint
+lint:
+	@echo "Linting..."
+	golangci-lint run
 
 .PHONY: sql-fmt
 sql-fmt:
@@ -22,3 +28,8 @@ sql-fmt:
 sqlc: sql-fmt
 	@echo "Generating sqlc files..."
 	sqlc generate
+
+.PHONY: tidy
+tidy:
+	@echo "Tidying go..."
+	go mod tidy
