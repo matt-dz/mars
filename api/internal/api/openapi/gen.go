@@ -354,6 +354,7 @@ func (r GetApiHealthResponse) StatusCode() int {
 type PostApiLoginResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *LoginResponse
 	JSON401      *Error
 	JSON500      *Error
 }
@@ -472,6 +473,13 @@ func ParsePostApiLoginResponse(rsp *http.Response) (*PostApiLoginResponse, error
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LoginResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -772,25 +780,17 @@ type PostApiLogin200ResponseHeaders struct {
 	SetCookie string
 }
 
-type PostApiLogin200AppilcationjsonResponse struct {
-	Body          io.Reader
-	Headers       PostApiLogin200ResponseHeaders
-	ContentLength int64
+type PostApiLogin200JSONResponse struct {
+	Body    LoginResponse
+	Headers PostApiLogin200ResponseHeaders
 }
 
-func (response PostApiLogin200AppilcationjsonResponse) VisitPostApiLoginResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "appilcation/json")
-	if response.ContentLength != 0 {
-		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
-	}
+func (response PostApiLogin200JSONResponse) VisitPostApiLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Set-Cookie", fmt.Sprint(response.Headers.SetCookie))
 	w.WriteHeader(200)
 
-	if closer, ok := response.Body.(io.ReadCloser); ok {
-		defer closer.Close()
-	}
-	_, err := io.Copy(w, response.Body)
-	return err
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 type PostApiLogin401JSONResponse Error

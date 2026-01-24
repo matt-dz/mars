@@ -39,6 +39,10 @@ func Start(ctx context.Context, port uint16, env *env.Env) error {
 	router.Use(m.Recoverer)
 
 	strictHandlerOptions := openapi.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			reqid := requestid.FromContext(r.Context())
+			_ = apierror.EncodeError(w, apierror.BadRequest, err.Error(), reqid)
+		},
 		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
 			reqid := requestid.FromContext(r.Context())
 			_ = apierror.EncodeInternalError(w, reqid)

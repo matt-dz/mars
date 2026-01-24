@@ -94,7 +94,7 @@ paths:
                   summary: CSRF token cookie
                   value: csrf=<csrf_token>; Secure; SameSite=Lax; Path=/
           content:
-            appilcation/json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/LoginResponse"
         "401":

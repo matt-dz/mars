@@ -41,7 +41,6 @@ func (s Server) PostApiLogin(ctx context.Context, request PostApiLoginRequestObj
 	PostApiLoginResponseObject, error,
 ) {
 	reqid := requestid.FromContext(ctx)
-
 	// Get user from database
 	s.Env.Logger.DebugContext(ctx, "getting user")
 	user, err := s.Env.Database.GetUserByEmail(ctx, string(request.Body.Email))
