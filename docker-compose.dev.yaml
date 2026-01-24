@@ -45,6 +45,17 @@ services:
     volumes:
       - ./dev/postgres:/var/lib/postgresql
 
+  frontend:
+    container_name: mars-frontend
+    hostname: mars-frontend
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
   swagger-ui:
     image: swaggerapi/swagger-ui:latest
     container_name: mars-docs
