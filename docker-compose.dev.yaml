@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: ./api/
+      dockerfile: Dockerfile.dev
+    container_name: mars-api
+    hostname: mars-api
+    restart: unless-stopped
+    environment:
+      DATABASE_HOST: mars-database
+      DATABASE_PORT: 5432
+      DATABASE_USER: mars
+      DATABASE_PASSWORD: secure-password
+      DATABASE_NAME: mars
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: Passw0rds!!!
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./api/:/app
+      - ./dev/go-modules:/go/pkg/mod
+    stdin_open: true
+    tty: true
+
+  database:
+    image: postgres:18
+    container_name: mars-database
+    hostname: mars-database
+    environment:
+      POSTGRES_PASSWORD: secure-password
+      POSTGRES_USER: mars
+      POSTGRES_DB: mars
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - ./dev/postgres:/var/lib/postgresql

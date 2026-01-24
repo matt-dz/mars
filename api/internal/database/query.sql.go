@@ -7,7 +7,27 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
+
+const adminExists = `-- name: AdminExists :one
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      users
+    WHERE
+      ROLE = 'admin')
+`
+
+func (q *Queries) AdminExists(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, adminExists)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
 
 const checkUsersTableExists = `-- name: CheckUsersTableExists :one
 SELECT
@@ -26,6 +46,44 @@ func (q *Queries) CheckUsersTableExists(ctx context.Context) (bool, error) {
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const createAdminUser = `-- name: CreateAdminUser :one
+INSERT INTO users (email, role, password_hash)
+  VALUES (trim(lower($2::text)), 'admin', $1)
+RETURNING
+  id
+`
+
+type CreateAdminUserParams struct {
+	PasswordHash string
+	Email        string
+}
+
+func (q *Queries) CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createAdminUser, arg.PasswordHash, arg.Email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (email, role, password_hash)
+  VALUES (trim(lower($2::text)), 'user', $1)
+RETURNING
+  id
+`
+
+type CreateUserParams struct {
+	PasswordHash string
+	Email        string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.PasswordHash, arg.Email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const ping = `-- name: Ping :exec

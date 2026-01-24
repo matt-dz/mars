@@ -19,7 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func Start(ctx context.Context, port uint32, env *env.Env) error {
+func Start(ctx context.Context, port uint16, env *env.Env) error {
 	server := openapi.NewServer(env)
 	spec, err := docs.Docs.ReadFile("api.yaml")
 	if err != nil {

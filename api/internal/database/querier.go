@@ -6,10 +6,15 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	AdminExists(ctx context.Context) (bool, error)
 	CheckUsersTableExists(ctx context.Context) (bool, error)
+	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (uuid.UUID, error)
 	Ping(ctx context.Context) error
 }
 

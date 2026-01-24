@@ -18,10 +18,6 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
-const (
-	BearerTokenAuthScopes = "BearerTokenAuth.Scopes"
-)
-
 // Error defines model for Error.
 type Error struct {
 	Code    string `json:"code"`
@@ -103,15 +99,15 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetHealth request
-	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetApiHealth request
+	GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOpenapiYaml request
-	GetOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetApiOpenapiYaml request
+	GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetHealthRequest(c.Server)
+func (c *Client) GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiHealthRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +118,8 @@ func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOpenapiYamlRequest(c.Server)
+func (c *Client) GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiOpenapiYamlRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +130,8 @@ func (c *Client) GetOpenapiYaml(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
-// NewGetHealthRequest generates requests for GetHealth
-func NewGetHealthRequest(server string) (*http.Request, error) {
+// NewGetApiHealthRequest generates requests for GetApiHealth
+func NewGetApiHealthRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -143,7 +139,7 @@ func NewGetHealthRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/health")
+	operationPath := fmt.Sprintf("/api/health")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -161,8 +157,8 @@ func NewGetHealthRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetOpenapiYamlRequest generates requests for GetOpenapiYaml
-func NewGetOpenapiYamlRequest(server string) (*http.Request, error) {
+// NewGetApiOpenapiYamlRequest generates requests for GetApiOpenapiYaml
+func NewGetApiOpenapiYamlRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -170,7 +166,7 @@ func NewGetOpenapiYamlRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/openapi.yaml")
+	operationPath := fmt.Sprintf("/api/openapi.yaml")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -231,21 +227,21 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetHealthWithResponse request
-	GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
+	// GetApiHealthWithResponse request
+	GetApiHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiHealthResponse, error)
 
-	// GetOpenapiYamlWithResponse request
-	GetOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOpenapiYamlResponse, error)
+	// GetApiOpenapiYamlWithResponse request
+	GetApiOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOpenapiYamlResponse, error)
 }
 
-type GetHealthResponse struct {
+type GetApiHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r GetHealthResponse) Status() string {
+func (r GetApiHealthResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -253,14 +249,14 @@ func (r GetHealthResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetHealthResponse) StatusCode() int {
+func (r GetApiHealthResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetOpenapiYamlResponse struct {
+type GetApiOpenapiYamlResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	YAML200      *string
@@ -268,7 +264,7 @@ type GetOpenapiYamlResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetOpenapiYamlResponse) Status() string {
+func (r GetApiOpenapiYamlResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -276,40 +272,40 @@ func (r GetOpenapiYamlResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetOpenapiYamlResponse) StatusCode() int {
+func (r GetApiOpenapiYamlResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-// GetHealthWithResponse request returning *GetHealthResponse
-func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error) {
-	rsp, err := c.GetHealth(ctx, reqEditors...)
+// GetApiHealthWithResponse request returning *GetApiHealthResponse
+func (c *ClientWithResponses) GetApiHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiHealthResponse, error) {
+	rsp, err := c.GetApiHealth(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetHealthResponse(rsp)
+	return ParseGetApiHealthResponse(rsp)
 }
 
-// GetOpenapiYamlWithResponse request returning *GetOpenapiYamlResponse
-func (c *ClientWithResponses) GetOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOpenapiYamlResponse, error) {
-	rsp, err := c.GetOpenapiYaml(ctx, reqEditors...)
+// GetApiOpenapiYamlWithResponse request returning *GetApiOpenapiYamlResponse
+func (c *ClientWithResponses) GetApiOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOpenapiYamlResponse, error) {
+	rsp, err := c.GetApiOpenapiYaml(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetOpenapiYamlResponse(rsp)
+	return ParseGetApiOpenapiYamlResponse(rsp)
 }
 
-// ParseGetHealthResponse parses an HTTP response from a GetHealthWithResponse call
-func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
+// ParseGetApiHealthResponse parses an HTTP response from a GetApiHealthWithResponse call
+func ParseGetApiHealthResponse(rsp *http.Response) (*GetApiHealthResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetHealthResponse{
+	response := &GetApiHealthResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -327,15 +323,15 @@ func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 	return response, nil
 }
 
-// ParseGetOpenapiYamlResponse parses an HTTP response from a GetOpenapiYamlWithResponse call
-func ParseGetOpenapiYamlResponse(rsp *http.Response) (*GetOpenapiYamlResponse, error) {
+// ParseGetApiOpenapiYamlResponse parses an HTTP response from a GetApiOpenapiYamlWithResponse call
+func ParseGetApiOpenapiYamlResponse(rsp *http.Response) (*GetApiOpenapiYamlResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetOpenapiYamlResponse{
+	response := &GetApiOpenapiYamlResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -363,11 +359,11 @@ func ParseGetOpenapiYamlResponse(rsp *http.Response) (*GetOpenapiYamlResponse, e
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Health check
-	// (GET /health)
-	GetHealth(w http.ResponseWriter, r *http.Request)
+	// (GET /api/health)
+	GetApiHealth(w http.ResponseWriter, r *http.Request)
 	// Get OpenAPI specification.
-	// (GET /openapi.yaml)
-	GetOpenapiYaml(w http.ResponseWriter, r *http.Request)
+	// (GET /api/openapi.yaml)
+	GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -375,14 +371,14 @@ type ServerInterface interface {
 type Unimplemented struct{}
 
 // Health check
-// (GET /health)
-func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
+// (GET /api/health)
+func (_ Unimplemented) GetApiHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get OpenAPI specification.
-// (GET /openapi.yaml)
-func (_ Unimplemented) GetOpenapiYaml(w http.ResponseWriter, r *http.Request) {
+// (GET /api/openapi.yaml)
+func (_ Unimplemented) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -395,11 +391,11 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
+// GetApiHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetApiHealth(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHealth(w, r)
+		siw.Handler.GetApiHealth(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -409,17 +405,11 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
-// GetOpenapiYaml operation middleware
-func (siw *ServerInterfaceWrapper) GetOpenapiYaml(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
+// GetApiOpenapiYaml operation middleware
+func (siw *ServerInterfaceWrapper) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetOpenapiYaml(w, r)
+		siw.Handler.GetApiOpenapiYaml(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -543,52 +533,52 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
+		r.Get(options.BaseURL+"/api/health", wrapper.GetApiHealth)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/openapi.yaml", wrapper.GetOpenapiYaml)
+		r.Get(options.BaseURL+"/api/openapi.yaml", wrapper.GetApiOpenapiYaml)
 	})
 
 	return r
 }
 
-type GetHealthRequestObject struct {
+type GetApiHealthRequestObject struct {
 }
 
-type GetHealthResponseObject interface {
-	VisitGetHealthResponse(w http.ResponseWriter) error
+type GetApiHealthResponseObject interface {
+	VisitGetApiHealthResponse(w http.ResponseWriter) error
 }
 
-type GetHealth204Response struct {
+type GetApiHealth204Response struct {
 }
 
-func (response GetHealth204Response) VisitGetHealthResponse(w http.ResponseWriter) error {
+func (response GetApiHealth204Response) VisitGetApiHealthResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type GetHealth500JSONResponse Error
+type GetApiHealth500JSONResponse Error
 
-func (response GetHealth500JSONResponse) VisitGetHealthResponse(w http.ResponseWriter) error {
+func (response GetApiHealth500JSONResponse) VisitGetApiHealthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetOpenapiYamlRequestObject struct {
+type GetApiOpenapiYamlRequestObject struct {
 }
 
-type GetOpenapiYamlResponseObject interface {
-	VisitGetOpenapiYamlResponse(w http.ResponseWriter) error
+type GetApiOpenapiYamlResponseObject interface {
+	VisitGetApiOpenapiYamlResponse(w http.ResponseWriter) error
 }
 
-type GetOpenapiYaml200ApplicationxYamlResponse struct {
+type GetApiOpenapiYaml200ApplicationxYamlResponse struct {
 	Body          io.Reader
 	ContentLength int64
 }
 
-func (response GetOpenapiYaml200ApplicationxYamlResponse) VisitGetOpenapiYamlResponse(w http.ResponseWriter) error {
+func (response GetApiOpenapiYaml200ApplicationxYamlResponse) VisitGetApiOpenapiYamlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/x-yaml")
 	if response.ContentLength != 0 {
 		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
@@ -602,9 +592,9 @@ func (response GetOpenapiYaml200ApplicationxYamlResponse) VisitGetOpenapiYamlRes
 	return err
 }
 
-type GetOpenapiYaml500JSONResponse Error
+type GetApiOpenapiYaml500JSONResponse Error
 
-func (response GetOpenapiYaml500JSONResponse) VisitGetOpenapiYamlResponse(w http.ResponseWriter) error {
+func (response GetApiOpenapiYaml500JSONResponse) VisitGetApiOpenapiYamlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -614,11 +604,11 @@ func (response GetOpenapiYaml500JSONResponse) VisitGetOpenapiYamlResponse(w http
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Health check
-	// (GET /health)
-	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// (GET /api/health)
+	GetApiHealth(ctx context.Context, request GetApiHealthRequestObject) (GetApiHealthResponseObject, error)
 	// Get OpenAPI specification.
-	// (GET /openapi.yaml)
-	GetOpenapiYaml(ctx context.Context, request GetOpenapiYamlRequestObject) (GetOpenapiYamlResponseObject, error)
+	// (GET /api/openapi.yaml)
+	GetApiOpenapiYaml(ctx context.Context, request GetApiOpenapiYamlRequestObject) (GetApiOpenapiYamlResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -650,23 +640,23 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// GetHealth operation middleware
-func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
-	var request GetHealthRequestObject
+// GetApiHealth operation middleware
+func (sh *strictHandler) GetApiHealth(w http.ResponseWriter, r *http.Request) {
+	var request GetApiHealthRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetHealth(ctx, request.(GetHealthRequestObject))
+		return sh.ssi.GetApiHealth(ctx, request.(GetApiHealthRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetHealth")
+		handler = middleware(handler, "GetApiHealth")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
-		if err := validResponse.VisitGetHealthResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetApiHealthResponseObject); ok {
+		if err := validResponse.VisitGetApiHealthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -674,23 +664,23 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetOpenapiYaml operation middleware
-func (sh *strictHandler) GetOpenapiYaml(w http.ResponseWriter, r *http.Request) {
-	var request GetOpenapiYamlRequestObject
+// GetApiOpenapiYaml operation middleware
+func (sh *strictHandler) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request) {
+	var request GetApiOpenapiYamlRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetOpenapiYaml(ctx, request.(GetOpenapiYamlRequestObject))
+		return sh.ssi.GetApiOpenapiYaml(ctx, request.(GetApiOpenapiYamlRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetOpenapiYaml")
+		handler = middleware(handler, "GetApiOpenapiYaml")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetOpenapiYamlResponseObject); ok {
-		if err := validResponse.VisitGetOpenapiYamlResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetApiOpenapiYamlResponseObject); ok {
+		if err := validResponse.VisitGetApiOpenapiYamlResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

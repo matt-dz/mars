@@ -18,11 +18,14 @@ security:
 tags:
   - name: Health
     description: Health check endpoints
+  - name: Auth
+    description: Endpoints for logging in and managing auth sessions
 
 paths:
-  /openapi.yaml:
+  /api/openapi.yaml:
     get:
       summary: Get OpenAPI specification.
+      security: []
       tags:
         - Documentation
       responses:
@@ -38,9 +41,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-    security: []
 
-  /health:
+  /api/health:
     get:
       tags:
         - Health
@@ -56,7 +58,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-    security: []
 
 components:
   schemas:

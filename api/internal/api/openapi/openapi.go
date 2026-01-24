@@ -9,14 +9,14 @@ import (
 	"mars/internal/api/requestid"
 )
 
-func (Server) GetOpenapiYaml(
-	ctx context.Context, request GetOpenapiYamlRequestObject,
-) (GetOpenapiYamlResponseObject, error) {
+func (Server) GetApiOpenapiYaml(
+	ctx context.Context, request GetApiOpenapiYamlRequestObject,
+) (GetApiOpenapiYamlResponseObject, error) {
 	reqid := requestid.FromContext(ctx)
 
 	data, err := docs.Docs.ReadFile("api.yaml")
 	if err != nil {
-		return GetOpenapiYaml500JSONResponse{
+		return GetApiOpenapiYaml500JSONResponse{
 			Code:    apierror.InternalServerError.String(),
 			Status:  apierror.InternalServerError.Status(),
 			Message: "Internal Server Error",
@@ -24,7 +24,7 @@ func (Server) GetOpenapiYaml(
 		}, nil
 	}
 
-	return GetOpenapiYaml200ApplicationxYamlResponse{
+	return GetApiOpenapiYaml200ApplicationxYamlResponse{
 		Body:          bytes.NewReader(data),
 		ContentLength: int64(len(data)),
 	}, nil
