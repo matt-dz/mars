@@ -8,3 +8,7 @@ SELECT
     WHERE
       table_schema = 'public'
       AND table_name = 'users');
+
+-- name: Ping :exec
+SELECT
+  1;

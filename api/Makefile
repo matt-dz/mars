@@ -12,7 +12,7 @@ clean:
 .PHONY: fmt
 fmt: sql-fmt
 	@echo "Formatting..."
-	golangci-lint run
+	golangci-lint fmt
 
 .PHONY: lint
 lint:

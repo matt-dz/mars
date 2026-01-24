@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CheckUsersTableExists(ctx context.Context) (bool, error)
+	Ping(ctx context.Context) error
 }
 
 var _ Querier = (*Queries)(nil)

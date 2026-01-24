@@ -22,6 +22,14 @@ const (
 	BearerTokenAuthScopes = "BearerTokenAuth.Scopes"
 )
 
+// Error defines model for Error.
+type Error struct {
+	Code    string `json:"code"`
+	ErrorId uint64 `json:"error_id"`
+	Message string `json:"message"`
+	Status  int    `json:"status"`
+}
+
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -233,6 +241,7 @@ type ClientWithResponsesInterface interface {
 type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -255,6 +264,7 @@ type GetOpenapiYamlResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	YAML200      *string
+	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
@@ -304,6 +314,16 @@ func ParseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -321,6 +341,13 @@ func ParseGetOpenapiYamlResponse(rsp *http.Response) (*GetOpenapiYamlResponse, e
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
 		var dest string
 		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
@@ -540,6 +567,15 @@ func (response GetHealth204Response) VisitGetHealthResponse(w http.ResponseWrite
 	return nil
 }
 
+type GetHealth500JSONResponse Error
+
+func (response GetHealth500JSONResponse) VisitGetHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetOpenapiYamlRequestObject struct {
 }
 
@@ -566,7 +602,7 @@ func (response GetOpenapiYaml200ApplicationxYamlResponse) VisitGetOpenapiYamlRes
 	return err
 }
 
-type GetOpenapiYaml500JSONResponse interface{}
+type GetOpenapiYaml500JSONResponse Error
 
 func (response GetOpenapiYaml500JSONResponse) VisitGetOpenapiYamlResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

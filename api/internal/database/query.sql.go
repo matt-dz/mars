@@ -27,3 +27,13 @@ func (q *Queries) CheckUsersTableExists(ctx context.Context) (bool, error) {
 	err := row.Scan(&exists)
 	return exists, err
 }
+
+const ping = `-- name: Ping :exec
+SELECT
+  1
+`
+
+func (q *Queries) Ping(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, ping)
+	return err
+}

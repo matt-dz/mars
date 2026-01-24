@@ -37,7 +37,7 @@ paths:
           content:
             application/json:
               schema:
-              $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/Error"
     security: []
 
   /health:
@@ -50,6 +50,13 @@ paths:
       responses:
         "204":
           description: API is healthy
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    security: []
 
 components:
   schemas:
@@ -59,7 +66,8 @@ components:
         code:
           type: string
         error_id:
-          type: string
+          type: integer
+          format: uint64
         message:
           type: string
         status:
