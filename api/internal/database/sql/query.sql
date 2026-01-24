@@ -35,4 +35,13 @@ SET
   refresh_token_hash = $1,
   refresh_token_expires_at = $2
 WHERE
+  id = $3;
+
+-- name: GetUserRefreshToken :one
+SELECT
+  refresh_token_hash,
+  refresh_token_expires_at
+FROM
+  users
+WHERE
   id = $1;

@@ -14,6 +14,7 @@ type Querier interface {
 	AdminExists(ctx context.Context) (bool, error)
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
+	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
 	Ping(ctx context.Context) error
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 }

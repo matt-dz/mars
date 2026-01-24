@@ -110,7 +110,121 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/auth/refresh:
+    post:
+      summary: Refresh session tokens
+      tags:
+        - Auth
+      description: >
+        Uses a valid refresh token cookie to issue a new access and refresh token pair.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/RefreshTokenCookie"
+        - $ref: "#/components/parameters/CsrfTokenHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        "200":
+          description: >
+            OK - For browser clients, access and refresh tokens are set as HTTP-only
+            cookies. For API clients/Swagger, an access token is also returned in the body.
+          headers:
+            Set-Cookie:
+              description: >
+                HTTP-only cookies for access and refresh tokens. This header is sent twice:
+                once for the "access" cookie and once for the "refresh" cookie.
+              schema:
+                type: string
+              examples:
+                access:
+                  summary: Access token cookie
+                  value: access=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                refresh:
+                  summary: Refresh token cookie
+                  value: refresh=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                csrf:
+                  summary: CSRF token cookie
+                  value: csrf=<csrf_token>; Secure; SameSite=Lax; Path=/
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Expired, invalid, or missing refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/verify:
+    get:
+      summary: Verify user session
+      tags:
+        - Auth
+      description: |
+        Validates the user's access token cookie, checks expiration,
+        and ensures the user has the required role.
+      parameters:
+        - name: access
+          in: cookie
+          schema:
+            type: string
+          description: Access token
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/Role"
+      responses:
+        "204":
+          description: Session is valid
+        "401":
+          description: Expired, invalid, or missing access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
+  parameters:
+    CsrfTokenHeader:
+      name: X-CSRF-Token
+      in: header
+      required: false
+      description: >
+        CSRF token required when authenticating via cookies.
+        Must match the CSRF cookie value.
+      schema:
+        type: string
+
+    RefreshTokenCookie:
+      name: refresh
+      in: cookie
+      schema:
+        type: string
+      description: Refresh token
+
   schemas:
     LoginRequest:
       type: object
@@ -165,3 +279,22 @@ components:
         error_id: "12345678"
         message: track does not exist
         status: 404
+
+    RefreshToken:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token
+
+    Role:
+      type: string
+      enum:
+        - user
+        - admin
+
+  securitySchemes:
+    BearerTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

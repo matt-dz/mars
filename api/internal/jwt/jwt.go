@@ -16,17 +16,16 @@ type JWTParams struct {
 }
 
 const (
-	DefaultKID  = "1"
-	JWTDuration = time.Hour
+	DefaultKID = "1"
 )
 
-func GenerateJWT(params JWTParams, secret []byte, version string) (string, error) {
+func GenerateJWT(params JWTParams, secret []byte, version string, duration time.Duration) (string, error) {
 	// Build token
 	claims := jwt.MapClaims{
 		"sub":  params.UserID,
 		"role": params.Role.String(),
 		"iat":  time.Now().Unix(),
-		"exp":  time.Now().Add(JWTDuration).Unix(),
+		"exp":  time.Now().Add(duration).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = version

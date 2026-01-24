@@ -73,6 +73,28 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 	return i, err
 }
 
+const getUserRefreshToken = `-- name: GetUserRefreshToken :one
+SELECT
+  refresh_token_hash,
+  refresh_token_expires_at
+FROM
+  users
+WHERE
+  id = $1
+`
+
+type GetUserRefreshTokenRow struct {
+	RefreshTokenHash      pgtype.Text
+	RefreshTokenExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error) {
+	row := q.db.QueryRow(ctx, getUserRefreshToken, id)
+	var i GetUserRefreshTokenRow
+	err := row.Scan(&i.RefreshTokenHash, &i.RefreshTokenExpiresAt)
+	return i, err
+}
+
 const ping = `-- name: Ping :exec
 SELECT
   1
@@ -90,15 +112,16 @@ SET
   refresh_token_hash = $1,
   refresh_token_expires_at = $2
 WHERE
-  id = $1
+  id = $3
 `
 
 type UpdateUserRefreshTokenParams struct {
 	RefreshTokenHash      pgtype.Text
 	RefreshTokenExpiresAt pgtype.Timestamptz
+	ID                    uuid.UUID
 }
 
 func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error {
-	_, err := q.db.Exec(ctx, updateUserRefreshToken, arg.RefreshTokenHash, arg.RefreshTokenExpiresAt)
+	_, err := q.db.Exec(ctx, updateUserRefreshToken, arg.RefreshTokenHash, arg.RefreshTokenExpiresAt, arg.ID)
 	return err
 }

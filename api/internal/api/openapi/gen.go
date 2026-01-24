@@ -16,8 +16,19 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+const (
+	BearerTokenAuthScopes = "BearerTokenAuth.Scopes"
+)
+
+// Defines values for Role.
+const (
+	Admin Role = "admin"
+	User  Role = "user"
 )
 
 // Error defines model for Error.
@@ -43,6 +54,41 @@ type LoginResponse struct {
 	ExpiresIn int64  `json:"expires_in"`
 	TokenType string `json:"token_type"`
 }
+
+// RefreshToken defines model for RefreshToken.
+type RefreshToken struct {
+	// RefreshToken Refresh token
+	RefreshToken *string `json:"refresh_token,omitempty"`
+}
+
+// Role defines model for Role.
+type Role string
+
+// CsrfTokenHeader defines model for CsrfTokenHeader.
+type CsrfTokenHeader = string
+
+// RefreshTokenCookie defines model for RefreshTokenCookie.
+type RefreshTokenCookie = string
+
+// PostApiAuthRefreshParams defines parameters for PostApiAuthRefresh.
+type PostApiAuthRefreshParams struct {
+	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
+	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
+
+	// Refresh Refresh token
+	Refresh *RefreshTokenCookie `form:"refresh,omitempty" json:"refresh,omitempty"`
+}
+
+// GetApiAuthVerifyParams defines parameters for GetApiAuthVerify.
+type GetApiAuthVerifyParams struct {
+	Role *Role `form:"role,omitempty" json:"role,omitempty"`
+
+	// Access Access token
+	Access *string `form:"access,omitempty" json:"access,omitempty"`
+}
+
+// PostApiAuthRefreshJSONRequestBody defines body for PostApiAuthRefresh for application/json ContentType.
+type PostApiAuthRefreshJSONRequestBody = RefreshToken
 
 // PostApiLoginJSONRequestBody defines body for PostApiLogin for application/json ContentType.
 type PostApiLoginJSONRequestBody = LoginRequest
@@ -120,6 +166,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// PostApiAuthRefreshWithBody request with any body
+	PostApiAuthRefreshWithBody(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiAuthRefresh(ctx context.Context, params *PostApiAuthRefreshParams, body PostApiAuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiAuthVerify request
+	GetApiAuthVerify(ctx context.Context, params *GetApiAuthVerifyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetApiHealth request
 	GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -130,6 +184,42 @@ type ClientInterface interface {
 
 	// GetApiOpenapiYaml request
 	GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) PostApiAuthRefreshWithBody(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiAuthRefreshRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiAuthRefresh(ctx context.Context, params *PostApiAuthRefreshParams, body PostApiAuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiAuthRefreshRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiAuthVerify(ctx context.Context, params *GetApiAuthVerifyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiAuthVerifyRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -178,6 +268,144 @@ func (c *Client) GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEdi
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewPostApiAuthRefreshRequest calls the generic PostApiAuthRefresh builder with application/json body
+func NewPostApiAuthRefreshRequest(server string, params *PostApiAuthRefreshParams, body PostApiAuthRefreshJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiAuthRefreshRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostApiAuthRefreshRequestWithBody generates requests for PostApiAuthRefresh with any type of body
+func NewPostApiAuthRefreshRequestWithBody(server string, params *PostApiAuthRefreshParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/auth/refresh")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "X-CSRF-Token", runtime.ParamLocationHeader, *params.XCSRFToken)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	if params != nil {
+
+		if params.Refresh != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "refresh", runtime.ParamLocationCookie, *params.Refresh)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "refresh",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
+}
+
+// NewGetApiAuthVerifyRequest generates requests for GetApiAuthVerify
+func NewGetApiAuthVerifyRequest(server string, params *GetApiAuthVerifyParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/auth/verify")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Role != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "role", runtime.ParamLocationQuery, *params.Role); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
 }
 
 // NewGetApiHealthRequest generates requests for GetApiHealth
@@ -317,6 +545,14 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// PostApiAuthRefreshWithBodyWithResponse request with any body
+	PostApiAuthRefreshWithBodyWithResponse(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiAuthRefreshResponse, error)
+
+	PostApiAuthRefreshWithResponse(ctx context.Context, params *PostApiAuthRefreshParams, body PostApiAuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiAuthRefreshResponse, error)
+
+	// GetApiAuthVerifyWithResponse request
+	GetApiAuthVerifyWithResponse(ctx context.Context, params *GetApiAuthVerifyParams, reqEditors ...RequestEditorFn) (*GetApiAuthVerifyResponse, error)
+
 	// GetApiHealthWithResponse request
 	GetApiHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiHealthResponse, error)
 
@@ -327,6 +563,54 @@ type ClientWithResponsesInterface interface {
 
 	// GetApiOpenapiYamlWithResponse request
 	GetApiOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOpenapiYamlResponse, error)
+}
+
+type PostApiAuthRefreshResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *LoginResponse
+	JSON401      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiAuthRefreshResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiAuthRefreshResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiAuthVerifyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Error
+	JSON403      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiAuthVerifyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiAuthVerifyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetApiHealthResponse struct {
@@ -398,6 +682,32 @@ func (r GetApiOpenapiYamlResponse) StatusCode() int {
 	return 0
 }
 
+// PostApiAuthRefreshWithBodyWithResponse request with arbitrary body returning *PostApiAuthRefreshResponse
+func (c *ClientWithResponses) PostApiAuthRefreshWithBodyWithResponse(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiAuthRefreshResponse, error) {
+	rsp, err := c.PostApiAuthRefreshWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiAuthRefreshResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApiAuthRefreshWithResponse(ctx context.Context, params *PostApiAuthRefreshParams, body PostApiAuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiAuthRefreshResponse, error) {
+	rsp, err := c.PostApiAuthRefresh(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiAuthRefreshResponse(rsp)
+}
+
+// GetApiAuthVerifyWithResponse request returning *GetApiAuthVerifyResponse
+func (c *ClientWithResponses) GetApiAuthVerifyWithResponse(ctx context.Context, params *GetApiAuthVerifyParams, reqEditors ...RequestEditorFn) (*GetApiAuthVerifyResponse, error) {
+	rsp, err := c.GetApiAuthVerify(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiAuthVerifyResponse(rsp)
+}
+
 // GetApiHealthWithResponse request returning *GetApiHealthResponse
 func (c *ClientWithResponses) GetApiHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiHealthResponse, error) {
 	rsp, err := c.GetApiHealth(ctx, reqEditors...)
@@ -431,6 +741,86 @@ func (c *ClientWithResponses) GetApiOpenapiYamlWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetApiOpenapiYamlResponse(rsp)
+}
+
+// ParsePostApiAuthRefreshResponse parses an HTTP response from a PostApiAuthRefreshWithResponse call
+func ParsePostApiAuthRefreshResponse(rsp *http.Response) (*PostApiAuthRefreshResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiAuthRefreshResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LoginResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiAuthVerifyResponse parses an HTTP response from a GetApiAuthVerifyWithResponse call
+func ParseGetApiAuthVerifyResponse(rsp *http.Response) (*GetApiAuthVerifyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiAuthVerifyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetApiHealthResponse parses an HTTP response from a GetApiHealthWithResponse call
@@ -534,6 +924,12 @@ func ParseGetApiOpenapiYamlResponse(rsp *http.Response) (*GetApiOpenapiYamlRespo
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Refresh session tokens
+	// (POST /api/auth/refresh)
+	PostApiAuthRefresh(w http.ResponseWriter, r *http.Request, params PostApiAuthRefreshParams)
+	// Verify user session
+	// (GET /api/auth/verify)
+	GetApiAuthVerify(w http.ResponseWriter, r *http.Request, params GetApiAuthVerifyParams)
 	// Health check
 	// (GET /api/health)
 	GetApiHealth(w http.ResponseWriter, r *http.Request)
@@ -548,6 +944,18 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Refresh session tokens
+// (POST /api/auth/refresh)
+func (_ Unimplemented) PostApiAuthRefresh(w http.ResponseWriter, r *http.Request, params PostApiAuthRefreshParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Verify user session
+// (GET /api/auth/verify)
+func (_ Unimplemented) GetApiAuthVerify(w http.ResponseWriter, r *http.Request, params GetApiAuthVerifyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Health check
 // (GET /api/health)
@@ -575,6 +983,109 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// PostApiAuthRefresh operation middleware
+func (siw *ServerInterfaceWrapper) PostApiAuthRefresh(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostApiAuthRefreshParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfTokenHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("refresh"); err == nil {
+			var value RefreshTokenCookie
+			err = runtime.BindStyledParameterWithOptions("simple", "refresh", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refresh", Err: err})
+				return
+			}
+			params.Refresh = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiAuthRefresh(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetApiAuthVerify operation middleware
+func (siw *ServerInterfaceWrapper) GetApiAuthVerify(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetApiAuthVerifyParams
+
+	// ------------- Optional query parameter "role" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "role", r.URL.Query(), &params.Role)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value string
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApiAuthVerify(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetApiHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetApiHealth(w http.ResponseWriter, r *http.Request) {
@@ -732,6 +1243,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/auth/refresh", wrapper.PostApiAuthRefresh)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/auth/verify", wrapper.GetApiAuthVerify)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/health", wrapper.GetApiHealth)
 	})
 	r.Group(func(r chi.Router) {
@@ -742,6 +1259,93 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 
 	return r
+}
+
+type PostApiAuthRefreshRequestObject struct {
+	Params PostApiAuthRefreshParams
+	Body   *PostApiAuthRefreshJSONRequestBody
+}
+
+type PostApiAuthRefreshResponseObject interface {
+	VisitPostApiAuthRefreshResponse(w http.ResponseWriter) error
+}
+
+type PostApiAuthRefresh200ResponseHeaders struct {
+	SetCookie string
+}
+
+type PostApiAuthRefresh200JSONResponse struct {
+	Body    LoginResponse
+	Headers PostApiAuthRefresh200ResponseHeaders
+}
+
+func (response PostApiAuthRefresh200JSONResponse) VisitPostApiAuthRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Set-Cookie", fmt.Sprint(response.Headers.SetCookie))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type PostApiAuthRefresh401JSONResponse Error
+
+func (response PostApiAuthRefresh401JSONResponse) VisitPostApiAuthRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiAuthRefresh500JSONResponse Error
+
+func (response PostApiAuthRefresh500JSONResponse) VisitPostApiAuthRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiAuthVerifyRequestObject struct {
+	Params GetApiAuthVerifyParams
+}
+
+type GetApiAuthVerifyResponseObject interface {
+	VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error
+}
+
+type GetApiAuthVerify204Response struct {
+}
+
+func (response GetApiAuthVerify204Response) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GetApiAuthVerify401JSONResponse Error
+
+func (response GetApiAuthVerify401JSONResponse) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiAuthVerify403JSONResponse Error
+
+func (response GetApiAuthVerify403JSONResponse) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiAuthVerify500JSONResponse Error
+
+func (response GetApiAuthVerify500JSONResponse) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetApiHealthRequestObject struct {
@@ -848,6 +1452,12 @@ func (response GetApiOpenapiYaml500JSONResponse) VisitGetApiOpenapiYamlResponse(
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Refresh session tokens
+	// (POST /api/auth/refresh)
+	PostApiAuthRefresh(ctx context.Context, request PostApiAuthRefreshRequestObject) (PostApiAuthRefreshResponseObject, error)
+	// Verify user session
+	// (GET /api/auth/verify)
+	GetApiAuthVerify(ctx context.Context, request GetApiAuthVerifyRequestObject) (GetApiAuthVerifyResponseObject, error)
 	// Health check
 	// (GET /api/health)
 	GetApiHealth(ctx context.Context, request GetApiHealthRequestObject) (GetApiHealthResponseObject, error)
@@ -886,6 +1496,65 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// PostApiAuthRefresh operation middleware
+func (sh *strictHandler) PostApiAuthRefresh(w http.ResponseWriter, r *http.Request, params PostApiAuthRefreshParams) {
+	var request PostApiAuthRefreshRequestObject
+
+	request.Params = params
+
+	var body PostApiAuthRefreshJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiAuthRefresh(ctx, request.(PostApiAuthRefreshRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiAuthRefresh")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiAuthRefreshResponseObject); ok {
+		if err := validResponse.VisitPostApiAuthRefreshResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetApiAuthVerify operation middleware
+func (sh *strictHandler) GetApiAuthVerify(w http.ResponseWriter, r *http.Request, params GetApiAuthVerifyParams) {
+	var request GetApiAuthVerifyRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiAuthVerify(ctx, request.(GetApiAuthVerifyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiAuthVerify")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetApiAuthVerifyResponseObject); ok {
+		if err := validResponse.VisitGetApiAuthVerifyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetApiHealth operation middleware

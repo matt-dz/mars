@@ -2,17 +2,20 @@
 package tokens
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"mars/internal/env"
 	marsjwt "mars/internal/jwt"
 	"mars/internal/role"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -22,9 +25,21 @@ const (
 )
 
 const (
-	refreshTokenName = "refresh"
-	accessTokenName  = "access"
-	csrfTokenName    = "csrf"
+	RefreshTokenName    = "refresh"
+	AccessTokenName     = "access"
+	CsrfTokenName       = "csrf"
+	AuthorizationHeader = "Authorization"
+	CsrfTokenHeader     = "X-CSRF-Token"
+)
+
+type (
+	useridCtxKeyType      struct{}
+	accessTokenCtxKeyType struct{}
+)
+
+var (
+	useridCtxKey      useridCtxKeyType
+	accessTokenCtxKey accessTokenCtxKeyType
 )
 
 func RefreshTokenDuration() time.Duration {
@@ -35,13 +50,28 @@ func AccessTokenDuration() time.Duration {
 	return time.Minute * 30 // 30 minutes
 }
 
-func CreateRefreshToken() (token string, err error) {
+func CreateRefreshToken(userid uuid.UUID) (token string, err error) {
 	bytes := make([]byte, RefreshTokenBytes)
 	_, err = rand.Read(bytes)
 	if err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(bytes), nil
+	return fmt.Sprintf(
+		"%s$%s", userid, base64.StdEncoding.EncodeToString(bytes)), nil
+}
+
+func ParseRefreshToken(refreshtoken string) (
+	userid uuid.UUID, err error,
+) {
+	id, _, found := strings.Cut(refreshtoken, "$")
+	if !found {
+		return userid, errors.New("invalid refresh token, expected format \"<user-id>$<random>\"")
+	}
+	userid, err = uuid.Parse(id)
+	if err != nil {
+		return userid, fmt.Errorf("invalid user id: %w", err)
+	}
+	return userid, nil
 }
 
 func CreateCSRFToken() (token string, err error) {
@@ -58,18 +88,13 @@ func CreateCSRFToken() (token string, err error) {
 func CreateUserAccessToken(env *env.Env, userid uuid.UUID) (token string, err error) {
 	secret := env.Get("APP_SECRET")
 	if secret == "" {
-		return "", errors.New("no APP_SECRET set")
-	}
-
-	secretBytes, err := base64.StdEncoding.DecodeString(secret)
-	if err != nil {
-		return "", fmt.Errorf("decoding secret: %w", err)
+		return "", errors.New("APP_SECRET not set")
 	}
 
 	jwt, err := marsjwt.GenerateJWT(marsjwt.JWTParams{
 		Role:   role.RoleUser,
 		UserID: userid.String(),
-	}, secretBytes, "1")
+	}, []byte(secret), "1", AccessTokenDuration())
 	if err != nil {
 		return "", fmt.Errorf("creating jwt: %w", err)
 	}
@@ -79,7 +104,7 @@ func CreateUserAccessToken(env *env.Env, userid uuid.UUID) (token string, err er
 
 func NewRefreshTokenCookie(token string, secure bool) *http.Cookie {
 	cookie := &http.Cookie{
-		Name:     refreshTokenName,
+		Name:     RefreshTokenName,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
@@ -93,7 +118,7 @@ func NewRefreshTokenCookie(token string, secure bool) *http.Cookie {
 
 func NewAccessTokenCookie(token string, secure bool) *http.Cookie {
 	cookie := &http.Cookie{
-		Name:     accessTokenName,
+		Name:     AccessTokenName,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
@@ -107,7 +132,7 @@ func NewAccessTokenCookie(token string, secure bool) *http.Cookie {
 
 func NewCSRFTokenCookie(token string, secure bool) *http.Cookie {
 	return &http.Cookie{
-		Name:     csrfTokenName,
+		Name:     CsrfTokenName,
 		Value:    token,
 		Path:     "/",
 		MaxAge:   0, // will exist the duration of the session
@@ -115,4 +140,36 @@ func NewCSRFTokenCookie(token string, secure bool) *http.Cookie {
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 	}
+}
+
+func ParseBearerToken(bearertoken string) (string, error) {
+	token, found := strings.CutPrefix(bearertoken, "Bearer ")
+	if !found {
+		return "", errors.New("bearer token should be in format \"Bearer <token>\"")
+	}
+	return token, nil
+}
+
+func UserIDWithContext(ctx context.Context, userid uuid.UUID) context.Context {
+	return context.WithValue(ctx, useridCtxKey, userid)
+}
+
+func UserIDFromContext(ctx context.Context) (uuid.UUID, error) {
+	userid, ok := ctx.Value(useridCtxKey).(uuid.UUID)
+	if !ok {
+		return uuid.UUID{}, errors.New("invalid type")
+	}
+	return userid, nil
+}
+
+func AccessTokenWithContext(ctx context.Context, token *jwt.Token) context.Context {
+	return context.WithValue(ctx, accessTokenCtxKey, token)
+}
+
+func AccessTokenFromContext(ctx context.Context) (*jwt.Token, error) {
+	accessToken, ok := ctx.Value(useridCtxKey).(jwt.Token)
+	if !ok {
+		return nil, errors.New("invalid type")
+	}
+	return &accessToken, nil
 }

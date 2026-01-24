@@ -27,7 +27,6 @@ linters:
     - unconvert
     - reassign
     - misspell
-    - mnd
     - lll
     - iotamixing
     - loggercheck

@@ -106,15 +106,15 @@ func Database(ctx context.Context) (*database.Queries, error) {
 	// Creating DB connection
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database connection: %v", err)
+		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
 	db := database.New(pool)
 	if err := db.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %v", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	if err := database.ApplySchema(ctx, pool); err != nil {
-		return nil, fmt.Errorf("failed to apply database schema: %v", err)
+		return nil, fmt.Errorf("failed to apply database schema: %w", err)
 	}
 
 	return db, nil

@@ -16,7 +16,9 @@ import (
 	"mars/internal/env"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
+	oapimw "github.com/oapi-codegen/nethttp-middleware"
 )
 
 func Start(ctx context.Context, port uint16, env *env.Env) error {
@@ -37,6 +39,12 @@ func Start(ctx context.Context, port uint16, env *env.Env) error {
 	router.Use(m.AddRequestID)
 	router.Use(m.LogRequest())
 	router.Use(m.Recoverer)
+	router.Use(oapimw.OapiRequestValidatorWithOptions(swagger, &oapimw.Options{
+		Options: openapi3filter.Options{
+			AuthenticationFunc: m.OAPIAuthFunc,
+		},
+		ErrorHandlerWithOpts: m.OAPIErrorHandler,
+	}))
 
 	strictHandlerOptions := openapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
