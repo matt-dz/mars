@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const adminExists = `-- name: AdminExists :one
@@ -24,25 +25,6 @@ SELECT
 
 func (q *Queries) AdminExists(ctx context.Context) (bool, error) {
 	row := q.db.QueryRow(ctx, adminExists)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
-const checkUsersTableExists = `-- name: CheckUsersTableExists :one
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      information_schema.tables
-    WHERE
-      table_schema = 'public'
-      AND table_name = 'users')
-`
-
-func (q *Queries) CheckUsersTableExists(ctx context.Context) (bool, error) {
-	row := q.db.QueryRow(ctx, checkUsersTableExists)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -67,23 +49,28 @@ func (q *Queries) CreateAdminUser(ctx context.Context, arg CreateAdminUserParams
 	return id, err
 }
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, role, password_hash)
-  VALUES (trim(lower($2::text)), 'user', $1)
-RETURNING
-  id
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT
+  id,
+  email,
+  password_hash
+FROM
+  users
+WHERE
+  email = trim(lower($1::text))
 `
 
-type CreateUserParams struct {
-	PasswordHash string
+type GetUserByEmailRow struct {
+	ID           uuid.UUID
 	Email        string
+	PasswordHash string
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.PasswordHash, arg.Email)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
+	err := row.Scan(&i.ID, &i.Email, &i.PasswordHash)
+	return i, err
 }
 
 const ping = `-- name: Ping :exec
@@ -93,5 +80,25 @@ SELECT
 
 func (q *Queries) Ping(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, ping)
+	return err
+}
+
+const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :exec
+UPDATE
+  users
+SET
+  refresh_token_hash = $1,
+  refresh_token_expires_at = $2
+WHERE
+  id = $1
+`
+
+type UpdateUserRefreshTokenParams struct {
+	RefreshTokenHash      pgtype.Text
+	RefreshTokenExpiresAt pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error {
+	_, err := q.db.Exec(ctx, updateUserRefreshToken, arg.RefreshTokenHash, arg.RefreshTokenExpiresAt)
 	return err
 }

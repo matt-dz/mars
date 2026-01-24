@@ -12,10 +12,10 @@ import (
 
 type Querier interface {
 	AdminExists(ctx context.Context) (bool, error)
-	CheckUsersTableExists(ctx context.Context) (bool, error)
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (uuid.UUID, error)
+	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	Ping(ctx context.Context) error
+	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 }
 
 var _ Querier = (*Queries)(nil)

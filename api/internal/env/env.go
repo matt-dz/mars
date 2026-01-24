@@ -4,6 +4,8 @@ package env
 import (
 	"context"
 	"log/slog"
+	"os"
+	"strings"
 
 	"mars/internal/database"
 	"mars/internal/log"
@@ -17,6 +19,31 @@ var envKey envKeyType
 type Env struct {
 	Logger   *slog.Logger
 	Database database.Querier
+	vars     map[string]string
+}
+
+func (e *Env) Get(key string) string {
+	if e.vars == nil {
+		e.vars = make(map[string]string)
+	}
+	return e.vars[key]
+}
+
+func (e *Env) Set(key, val string) {
+	if e.vars == nil {
+		e.vars = make(map[string]string)
+	}
+	e.vars[key] = val
+}
+
+func (e *Env) IsProd() bool {
+	return strings.ToLower(os.Getenv("ENV")) == "production"
+}
+
+func New() *Env {
+	return &Env{
+		vars: make(map[string]string),
+	}
 }
 
 // Null constructs a null instance.
@@ -24,6 +51,7 @@ func Null() *Env {
 	return &Env{
 		Logger:   log.NullLogger(),
 		Database: nil,
+		vars:     make(map[string]string),
 	}
 }
 

@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Mars API
-  description: |
+  description: >
     MARS (Music ARchival Software) is an archival service that aggregates your most listened
     to songs on a weekly and monthly basis and allows you to view and download the songs.
   contact:
@@ -59,8 +59,90 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/login:
+    post:
+      tags:
+        - Auth
+      summary: User login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: >
+            OK - For browser clients, access and refresh tokens are set as HTTP-only
+            cookies. For API clients/Swagger, an access token is also returned in the body.
+          headers:
+            Set-Cookie:
+              description: >
+                HTTP-only cookies for access and refresh tokens. This header is sent thrice:
+                once for the "access" cookie, once for the "refresh" cookie, and once for the "csrf" cookie.
+              schema:
+                type: string
+              examples:
+                access:
+                  summary: Access token cookie
+                  value: access=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                refresh:
+                  summary: Refresh token cookie
+                  value: refresh=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                csrf:
+                  summary: CSRF token cookie
+                  value: csrf=<csrf_token>; Secure; SameSite=Lax; Path=/
+          content:
+            appilcation/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Incorrect email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: >
+            JWT access token to use in the Authorization: Bearer header.
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          format: int64
+          description: Access token lifetime in seconds.
+      required:
+        - access_token
+        - token_type
+        - expires_in
+
     Error:
       type: object
       properties:

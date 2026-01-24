@@ -44,3 +44,27 @@ services:
       retries: 5
     volumes:
       - ./dev/postgres:/var/lib/postgresql
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: mars-docs
+    hostname: mars-docs
+    environment:
+      BASE_URL: /docs
+      URL: /api/openapi.yaml
+      DEEP_LINKING: true
+
+  nginx:
+    image: nginx:alpine
+    container_name: mars-nginx
+    hostname: mars-nginx
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      swagger-ui:
+        condition: service_started
+    ports:
+      - "8080:80"
+    volumes:
+      - ./fileserver.conf:/etc/nginx/conf.d/default.conf:ro
