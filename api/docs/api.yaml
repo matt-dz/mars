@@ -1,0 +1,76 @@
+openapi: 3.0.1
+info:
+  title: Mars API
+  description: |
+    MARS (Music ARchival Software) is an archival service that aggregates your most listened
+    to songs on a weekly and monthly basis and allows you to view and download the songs.
+  contact:
+    name: Matthew DeGuzman
+    url: https://github.com/matt-dz/mars
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+security:
+  - BearerTokenAuth: []
+
+tags:
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /openapi.yaml:
+    get:
+      summary: Get OpenAPI specification.
+      tags:
+        - Documentation
+      responses:
+        "200":
+          description: OpenAPI specification file
+          content:
+            application/x-yaml:
+              schema:
+                type: string
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+              $ref: "#/components/schemas/Error"
+    security: []
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the API
+      security: []
+      responses:
+        "204":
+          description: API is healthy
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        error_id:
+          type: string
+        message:
+          type: string
+        status:
+          type: integer
+      required:
+        - code
+        - error_id
+        - message
+        - status
+      example:
+        code: track_not_found
+        error_id: "12345678"
+        message: track does not exist
+        status: 404

@@ -33,3 +33,8 @@ sqlc: sql-fmt
 tidy:
 	@echo "Tidying go..."
 	go mod tidy
+
+.PHONY: docs
+docs:
+	@echo "Generating openapi code..."
+	cd internal/api/openapi && go generate
