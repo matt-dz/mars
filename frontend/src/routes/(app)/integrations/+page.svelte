@@ -3,18 +3,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import SpotifyStatus from '$lib/components/app/SpotifyStatus.svelte';
-	import { disconnectSpotify, getSpotifyAuthUrl } from '$lib/api/spotify';
+	import { disconnectSpotify } from '$lib/api/spotify';
+	import { getSpotifyAuthUrl } from '@/oauth';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { resolve } from '$app/paths';
 
 	let { data }: { data: PageData } = $props();
 
 	let showDisconnectDialog = $state(false);
 	let isDisconnecting = $state(false);
-
-	function connectSpotify() {
-		window.location.href = getSpotifyAuthUrl();
-	}
 
 	async function handleDisconnect() {
 		isDisconnecting = true;
@@ -32,7 +30,7 @@
 
 <div class="container mx-auto px-4 py-8">
 	<div class="mb-6">
-		<a href="/" class="text-sm text-muted-foreground hover:text-foreground">&larr; Back to playlists</a>
+		<a href={resolve('/')} class="text-sm text-muted-foreground hover:text-foreground">&larr; Back to playlists</a>
 	</div>
 
 	<h1 class="mb-6 text-3xl font-bold">Integrations</h1>
@@ -50,13 +48,13 @@
 		<Card.Footer>
 			{#if data.spotifyStatus.connected}
 				<div class="flex gap-2">
-					<Button variant="outline" onclick={connectSpotify}>Reconnect</Button>
+					<Button variant="outline" onclick={getSpotifyAuthUrl}>Reconnect</Button>
 					<Button variant="destructive" onclick={() => (showDisconnectDialog = true)}>
 						Disconnect
 					</Button>
 				</div>
 			{:else}
-				<Button onclick={connectSpotify}>Connect Spotify</Button>
+				<Button onclick={getSpotifyAuthUrl}>Connect Spotify</Button>
 			{/if}
 		</Card.Footer>
 	</Card.Root>

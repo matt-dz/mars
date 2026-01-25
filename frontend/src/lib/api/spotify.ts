@@ -1,4 +1,6 @@
+import { getCsrfToken } from '@/http';
 import { SpotifyStatusSchema, type SpotifyStatus } from './types';
+import { CSRF_HEADER } from '@/auth';
 
 type FetchFn = typeof fetch;
 
@@ -28,4 +30,16 @@ export async function disconnectSpotify(fetchFn: FetchFn = fetch): Promise<void>
 
 	void fetchFn; // Suppress unused variable warning for now
 	console.log('Disconnecting Spotify (mock)');
+}
+
+export async function getSpotifyTokens(code: string, fetchFn: FetchFn = fetch): Promise<void> {
+	const token = getCsrfToken();
+	await fetchFn('/api/oauth/spotify/token', {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			[CSRF_HEADER]: token ?? '',
+		},
+		body: JSON.stringify({ code }),
+	})
 }
