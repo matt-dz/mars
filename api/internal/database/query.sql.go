@@ -125,3 +125,55 @@ func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefr
 	_, err := q.db.Exec(ctx, updateUserRefreshToken, arg.RefreshTokenHash, arg.RefreshTokenExpiresAt, arg.ID)
 	return err
 }
+
+const updateUserSpotifyID = `-- name: UpdateUserSpotifyID :exec
+UPDATE
+  users
+SET
+  spotify_id = $1
+WHERE
+  id = $2
+`
+
+type UpdateUserSpotifyIDParams struct {
+	SpotifyID pgtype.Text
+	ID        uuid.UUID
+}
+
+func (q *Queries) UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserSpotifyID, arg.SpotifyID, arg.ID)
+	return err
+}
+
+const upsertUserSpotifyTokens = `-- name: UpsertUserSpotifyTokens :exec
+INSERT INTO spotify_tokens (spotify_user_id, access_token, token_type, scope, refresh_token, expires_at)
+  VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (spotify_user_id)
+  DO UPDATE SET
+    access_token = EXCLUDED.access_token,
+    token_type = EXCLUDED.token_type,
+    scope = EXCLUDED.scope,
+    refresh_token = EXCLUDED.refresh_token,
+    expires_at = EXCLUDED.expires_at
+`
+
+type UpsertUserSpotifyTokensParams struct {
+	SpotifyUserID string
+	AccessToken   string
+	TokenType     string
+	Scope         string
+	RefreshToken  string
+	ExpiresAt     pgtype.Timestamptz
+}
+
+func (q *Queries) UpsertUserSpotifyTokens(ctx context.Context, arg UpsertUserSpotifyTokensParams) error {
+	_, err := q.db.Exec(ctx, upsertUserSpotifyTokens,
+		arg.SpotifyUserID,
+		arg.AccessToken,
+		arg.TokenType,
+		arg.Scope,
+		arg.RefreshToken,
+		arg.ExpiresAt,
+	)
+	return err
+}

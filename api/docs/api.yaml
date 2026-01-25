@@ -9,7 +9,7 @@ info:
     url: https://github.com/matt-dz/mars
 
 servers:
-  - url: http://localhost:8080
+  - url: http://127.0.0.1:8080
     description: Development server
 
 security:
@@ -20,6 +20,8 @@ tags:
     description: Health check endpoints
   - name: Auth
     description: Endpoints for logging in and managing auth sessions
+  - name: OAuth
+    description: Endpoints for managing OAuth2.0 sessions
 
 paths:
   /api/openapi.yaml:
@@ -171,7 +173,7 @@ paths:
       summary: Verify user session
       tags:
         - Auth
-      description: |
+      description: >
         Validates the user's access token cookie, checks expiration,
         and ensures the user has the required role.
       parameters:
@@ -206,6 +208,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/oauth/spotify/token:
+    post:
+      summary: Get Spotify OAuth2.0 tokens.
+      tags:
+        - OAuth
+      description: >
+        Exchange an authorization code for Spotify OAuth2.0 tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotifyTokenRequest"
+      responses:
+        "204":
+          description: Successfully exchanged tokens
+        "400":
+          description: Bad Request - Invalid Code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     CsrfTokenHeader:
@@ -226,6 +257,14 @@ components:
       description: Refresh token
 
   schemas:
+    SpotifyTokenRequest:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+        - code
+
     LoginRequest:
       type: object
       properties:

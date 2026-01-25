@@ -17,6 +17,8 @@ type Querier interface {
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
 	Ping(ctx context.Context) error
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
+	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error
+	UpsertUserSpotifyTokens(ctx context.Context, arg UpsertUserSpotifyTokensParams) error
 }
 
 var _ Querier = (*Queries)(nil)

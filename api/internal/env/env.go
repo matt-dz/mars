@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"mars/internal/database"
+	marshttp "mars/internal/http"
 	"mars/internal/log"
 )
 
@@ -19,6 +20,7 @@ var envKey envKeyType
 type Env struct {
 	Logger   *slog.Logger
 	Database database.Querier
+	HTTP     *marshttp.Client
 	vars     map[string]string
 }
 

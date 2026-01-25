@@ -30,7 +30,7 @@ type SpotifyToken struct {
 	TokenType     string
 	Scope         string
 	RefreshToken  string
-	TokenExpires  pgtype.Timestamptz
+	ExpiresAt     pgtype.Timestamptz
 }
 
 type Track struct {

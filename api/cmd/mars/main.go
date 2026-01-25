@@ -12,6 +12,7 @@ import (
 
 	"mars/internal/api"
 	"mars/internal/env"
+	marshttp "mars/internal/http"
 	marslog "mars/internal/log"
 	"mars/internal/setup"
 )
@@ -43,6 +44,8 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	e := env.New()
 	e.Logger = logger
 	e.Database = db
+	e.HTTP = marshttp.New()
+	e.HTTP.Logger = logger
 
 	err = setup.AppSecret(e)
 	if err != nil {

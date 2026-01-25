@@ -64,6 +64,11 @@ type RefreshToken struct {
 // Role defines model for Role.
 type Role string
 
+// SpotifyTokenRequest defines model for SpotifyTokenRequest.
+type SpotifyTokenRequest struct {
+	Code string `json:"code"`
+}
+
 // CsrfTokenHeader defines model for CsrfTokenHeader.
 type CsrfTokenHeader = string
 
@@ -92,6 +97,9 @@ type PostApiAuthRefreshJSONRequestBody = RefreshToken
 
 // PostApiLoginJSONRequestBody defines body for PostApiLogin for application/json ContentType.
 type PostApiLoginJSONRequestBody = LoginRequest
+
+// PostApiOauthSpotifyTokenJSONRequestBody defines body for PostApiOauthSpotifyToken for application/json ContentType.
+type PostApiOauthSpotifyTokenJSONRequestBody = SpotifyTokenRequest
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -182,6 +190,11 @@ type ClientInterface interface {
 
 	PostApiLogin(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiOauthSpotifyTokenWithBody request with any body
+	PostApiOauthSpotifyTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiOauthSpotifyToken(ctx context.Context, body PostApiOauthSpotifyTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetApiOpenapiYaml request
 	GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
@@ -248,6 +261,30 @@ func (c *Client) PostApiLoginWithBody(ctx context.Context, contentType string, b
 
 func (c *Client) PostApiLogin(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiLoginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiOauthSpotifyTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiOauthSpotifyTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiOauthSpotifyToken(ctx context.Context, body PostApiOauthSpotifyTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiOauthSpotifyTokenRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -475,6 +512,46 @@ func NewPostApiLoginRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
+// NewPostApiOauthSpotifyTokenRequest calls the generic PostApiOauthSpotifyToken builder with application/json body
+func NewPostApiOauthSpotifyTokenRequest(server string, body PostApiOauthSpotifyTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiOauthSpotifyTokenRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiOauthSpotifyTokenRequestWithBody generates requests for PostApiOauthSpotifyToken with any type of body
+func NewPostApiOauthSpotifyTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/oauth/spotify/token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetApiOpenapiYamlRequest generates requests for GetApiOpenapiYaml
 func NewGetApiOpenapiYamlRequest(server string) (*http.Request, error) {
 	var err error
@@ -560,6 +637,11 @@ type ClientWithResponsesInterface interface {
 	PostApiLoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiLoginResponse, error)
 
 	PostApiLoginWithResponse(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiLoginResponse, error)
+
+	// PostApiOauthSpotifyTokenWithBodyWithResponse request with any body
+	PostApiOauthSpotifyTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error)
+
+	PostApiOauthSpotifyTokenWithResponse(ctx context.Context, body PostApiOauthSpotifyTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error)
 
 	// GetApiOpenapiYamlWithResponse request
 	GetApiOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOpenapiYamlResponse, error)
@@ -659,6 +741,29 @@ func (r PostApiLoginResponse) StatusCode() int {
 	return 0
 }
 
+type PostApiOauthSpotifyTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiOauthSpotifyTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiOauthSpotifyTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetApiOpenapiYamlResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -732,6 +837,23 @@ func (c *ClientWithResponses) PostApiLoginWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParsePostApiLoginResponse(rsp)
+}
+
+// PostApiOauthSpotifyTokenWithBodyWithResponse request with arbitrary body returning *PostApiOauthSpotifyTokenResponse
+func (c *ClientWithResponses) PostApiOauthSpotifyTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error) {
+	rsp, err := c.PostApiOauthSpotifyTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiOauthSpotifyTokenResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApiOauthSpotifyTokenWithResponse(ctx context.Context, body PostApiOauthSpotifyTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error) {
+	rsp, err := c.PostApiOauthSpotifyToken(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiOauthSpotifyTokenResponse(rsp)
 }
 
 // GetApiOpenapiYamlWithResponse request returning *GetApiOpenapiYamlResponse
@@ -889,6 +1011,39 @@ func ParsePostApiLoginResponse(rsp *http.Response) (*PostApiLoginResponse, error
 	return response, nil
 }
 
+// ParsePostApiOauthSpotifyTokenResponse parses an HTTP response from a PostApiOauthSpotifyTokenWithResponse call
+func ParsePostApiOauthSpotifyTokenResponse(rsp *http.Response) (*PostApiOauthSpotifyTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiOauthSpotifyTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetApiOpenapiYamlResponse parses an HTTP response from a GetApiOpenapiYamlWithResponse call
 func ParseGetApiOpenapiYamlResponse(rsp *http.Response) (*GetApiOpenapiYamlResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -936,6 +1091,9 @@ type ServerInterface interface {
 	// User login
 	// (POST /api/login)
 	PostApiLogin(w http.ResponseWriter, r *http.Request)
+	// Get Spotify OAuth2.0 tokens.
+	// (POST /api/oauth/spotify/token)
+	PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request)
 	// Get OpenAPI specification.
 	// (GET /api/openapi.yaml)
 	GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request)
@@ -966,6 +1124,12 @@ func (_ Unimplemented) GetApiHealth(w http.ResponseWriter, r *http.Request) {
 // User login
 // (POST /api/login)
 func (_ Unimplemented) PostApiLogin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get Spotify OAuth2.0 tokens.
+// (POST /api/oauth/spotify/token)
+func (_ Unimplemented) PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1115,6 +1279,26 @@ func (siw *ServerInterfaceWrapper) PostApiLogin(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// PostApiOauthSpotifyToken operation middleware
+func (siw *ServerInterfaceWrapper) PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiOauthSpotifyToken(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetApiOpenapiYaml operation middleware
 func (siw *ServerInterfaceWrapper) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request) {
 
@@ -1253,6 +1437,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/login", wrapper.PostApiLogin)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/oauth/spotify/token", wrapper.PostApiOauthSpotifyToken)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/openapi.yaml", wrapper.GetApiOpenapiYaml)
@@ -1415,6 +1602,40 @@ func (response PostApiLogin500JSONResponse) VisitPostApiLoginResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostApiOauthSpotifyTokenRequestObject struct {
+	Body *PostApiOauthSpotifyTokenJSONRequestBody
+}
+
+type PostApiOauthSpotifyTokenResponseObject interface {
+	VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error
+}
+
+type PostApiOauthSpotifyToken204Response struct {
+}
+
+func (response PostApiOauthSpotifyToken204Response) VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PostApiOauthSpotifyToken400JSONResponse Error
+
+func (response PostApiOauthSpotifyToken400JSONResponse) VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiOauthSpotifyToken500JSONResponse Error
+
+func (response PostApiOauthSpotifyToken500JSONResponse) VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetApiOpenapiYamlRequestObject struct {
 }
 
@@ -1464,6 +1685,9 @@ type StrictServerInterface interface {
 	// User login
 	// (POST /api/login)
 	PostApiLogin(ctx context.Context, request PostApiLoginRequestObject) (PostApiLoginResponseObject, error)
+	// Get Spotify OAuth2.0 tokens.
+	// (POST /api/oauth/spotify/token)
+	PostApiOauthSpotifyToken(ctx context.Context, request PostApiOauthSpotifyTokenRequestObject) (PostApiOauthSpotifyTokenResponseObject, error)
 	// Get OpenAPI specification.
 	// (GET /api/openapi.yaml)
 	GetApiOpenapiYaml(ctx context.Context, request GetApiOpenapiYamlRequestObject) (GetApiOpenapiYamlResponseObject, error)
@@ -1605,6 +1829,37 @@ func (sh *strictHandler) PostApiLogin(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostApiLoginResponseObject); ok {
 		if err := validResponse.VisitPostApiLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostApiOauthSpotifyToken operation middleware
+func (sh *strictHandler) PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request) {
+	var request PostApiOauthSpotifyTokenRequestObject
+
+	var body PostApiOauthSpotifyTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiOauthSpotifyToken(ctx, request.(PostApiOauthSpotifyTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiOauthSpotifyToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiOauthSpotifyTokenResponseObject); ok {
+		if err := validResponse.VisitPostApiOauthSpotifyTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

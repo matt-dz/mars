@@ -89,6 +89,6 @@ CREATE TABLE IF NOT EXISTS spotify_tokens (
   token_type text NOT NULL,
   scope text NOT NULL,
   refresh_token text NOT NULL,
-  token_expires timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL,
   FOREIGN KEY (spotify_user_id) REFERENCES users (spotify_id) ON DELETE CASCADE
 );
