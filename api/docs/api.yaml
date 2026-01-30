@@ -237,6 +237,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/spotify/status:
+    get:
+      summary: Get Spotify OAuth2.0 status.
+      tags:
+        - OAuth
+      description: >
+        Gets the integration status of a user's Spotify connection
+        by checking if their access token exists/is still valid.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotifyStatusResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     CsrfTokenHeader:
@@ -257,6 +279,14 @@ components:
       description: Refresh token
 
   schemas:
+    SpotifyStatusResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+      required:
+        - connected
+
     SpotifyTokenRequest:
       type: object
       properties:

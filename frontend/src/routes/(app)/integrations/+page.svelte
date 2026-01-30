@@ -30,7 +30,9 @@
 
 <div class="container mx-auto px-4 py-8">
 	<div class="mb-6">
-		<a href={resolve('/')} class="text-sm text-muted-foreground hover:text-foreground">&larr; Back to playlists</a>
+		<a href={resolve('/')} class="text-sm text-muted-foreground hover:text-foreground"
+			>&larr; Back to playlists</a
+		>
 	</div>
 
 	<h1 class="mb-6 text-3xl font-bold">Integrations</h1>

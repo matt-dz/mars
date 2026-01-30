@@ -34,7 +34,9 @@
 		});
 	}
 
-	let filteredPlaylists = $derived(sortPlaylists(filterByPeriod(data.playlists, period), sortOrder));
+	let filteredPlaylists = $derived(
+		sortPlaylists(filterByPeriod(data.playlists, period), sortOrder)
+	);
 </script>
 
 <div class="container mx-auto px-4 py-8">

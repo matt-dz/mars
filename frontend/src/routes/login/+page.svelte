@@ -30,10 +30,10 @@
 				throw new Error(data.message || 'Login failed');
 			}
 
-			goto(resolve('/'))
+			goto(resolve('/'));
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
-			console.error(error)
+			console.error(error);
 		} finally {
 			isLoading = false;
 		}

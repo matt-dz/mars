@@ -34,7 +34,9 @@
 
 <div class="container mx-auto px-4 py-8">
 	<div class="mb-6">
-		<a href="/" class="text-sm text-muted-foreground hover:text-foreground">&larr; Back to playlists</a>
+		<a href="/" class="text-sm text-muted-foreground hover:text-foreground"
+			>&larr; Back to playlists</a
+		>
 	</div>
 
 	<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

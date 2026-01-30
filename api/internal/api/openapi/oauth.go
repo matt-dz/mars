@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"mars/internal/tokens"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -216,4 +218,49 @@ func (s Server) PostApiOauthSpotifyToken(ctx context.Context, request PostApiOau
 	}
 
 	return PostApiOauthSpotifyToken204Response{}, nil
+}
+
+func (s Server) GetApiSpotifyStatus(
+	ctx context.Context, request GetApiSpotifyStatusRequestObject) (
+	GetApiSpotifyStatusResponseObject, error,
+) {
+	reqid := requestid.FromContext(ctx)
+	userid, err := tokens.UserIDFromContext(ctx)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get userid", slog.Any("error", err))
+		return GetApiSpotifyStatus500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Get connection status
+	s.Env.Logger.DebugContext(ctx, "getting connection status")
+	expiration, err := s.Env.Database.GetUserSpotifyTokenExpiration(ctx, userid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		s.Env.Logger.ErrorContext(ctx, "no rows found", slog.Any("error", err))
+		return GetApiSpotifyStatus200JSONResponse{
+			Connected: false,
+		}, nil
+	} else if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get status", slog.Any("error", err))
+		return GetApiSpotifyStatus500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	if !expiration.Valid || expiration.Time.Before(time.Now()) {
+		s.Env.Logger.ErrorContext(ctx, "tokens have expired")
+		return GetApiSpotifyStatus200JSONResponse{
+			Connected: false,
+		}, nil
+	}
+
+	return GetApiSpotifyStatus200JSONResponse{
+		Connected: true,
+	}, nil
 }

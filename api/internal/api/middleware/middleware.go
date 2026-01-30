@@ -163,7 +163,6 @@ func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.Auth
 	} else {
 		accessToken = cookie.Value
 	}
-	m.Env.Logger.DebugContext(ctx, "found token", slog.String("token", accessToken))
 
 	// Validate CSRF token
 	if slices.Contains(

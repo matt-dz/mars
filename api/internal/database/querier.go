@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -15,6 +16,7 @@ type Querier interface {
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
+	GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error)
 	Ping(ctx context.Context) error
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error

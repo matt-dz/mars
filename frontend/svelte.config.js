@@ -11,8 +11,8 @@ const config = {
 		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 		adapter: isNode ? nodeAdapter({ out: 'build' }) : adapter(),
 		alias: {
-			"@/*": "src/lib/*"
-		},
+			'@/*': 'src/lib/*'
+		}
 	}
 };
 

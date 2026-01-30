@@ -17,7 +17,7 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="rounded-full outline-none ring-ring focus-visible:ring-2">
+	<DropdownMenu.Trigger class="rounded-full ring-ring outline-none focus-visible:ring-2">
 		<Avatar.Root class="h-9 w-9">
 			<Avatar.Fallback class="bg-primary text-primary-foreground">
 				{user.email[0].toUpperCase()}

@@ -1,8 +1,19 @@
-import ky, { type KyResponse, type Options } from 'ky';
-import { CSRF_HEADER, CSRF_TOKEN_COOKIE_NAME } from '$lib/auth';
-import { browser } from '$app/environment'
+import ky, { type KyInstance, type KyResponse, type Options } from 'ky';
+import {
+	ACCESS_TOKEN_COOKIE_NAME,
+	CSRF_HEADER,
+	CSRF_TOKEN_COOKIE_NAME,
+	REFRESH_TOKEN_COOKIE_NAME
+} from '$lib/auth';
+import { browser } from '$app/environment';
+import { env } from '$env/dynamic/public';
 
 const retryCodes = [408, 413, 429, 500, 502, 503, 504];
+
+function getPrefixUrl(): string {
+	if (browser) return '';
+	return env.PUBLIC_API_URL ?? '';
+}
 
 export function getCsrfToken(): string | null {
 	if (!browser) return null;
@@ -13,7 +24,7 @@ export function getCsrfToken(): string | null {
 		const key = c.slice(0, splitIdx);
 		const val = c.slice(splitIdx + 1);
 		if (key === CSRF_TOKEN_COOKIE_NAME) {
-			return val
+			return val;
 		}
 	}
 	return null;
@@ -24,11 +35,12 @@ export function getCsrfToken(): string | null {
  * Only works in browser context.
  */
 function injectCSRFToken(request: Request) {
-	const token = getCsrfToken()
-	if (token) request.headers.set(CSRF_HEADER, token)
+	const token = getCsrfToken();
+	if (token) request.headers.set(CSRF_HEADER, token);
 }
 
 const baseOptions: Options = {
+	prefixUrl: getPrefixUrl(),
 	timeout: 15 * 1000,
 	retry: {
 		retryOnTimeout: true,
@@ -46,16 +58,39 @@ const baseOptions: Options = {
 	}
 };
 
-const fetch = ky.create({
-	...baseOptions,
+const fetchFn = ky.create({
+	...baseOptions
 });
+
+export function wrap(fetchFn: typeof fetch): KyInstance {
+	return ky.create({
+		...baseOptions,
+		fetch: fetchFn
+	});
+}
+
+export function wrapWithCredentials(
+	fetchFn: typeof fetch,
+	accessToken: string,
+	refreshToken: string,
+	csrfToken: string | null = ''
+): KyInstance {
+	return ky.create({
+		...baseOptions,
+		headers: {
+			...baseOptions.headers,
+			Cookie: `${ACCESS_TOKEN_COOKIE_NAME}=${accessToken}; ${REFRESH_TOKEN_COOKIE_NAME}=${refreshToken}; ${CSRF_TOKEN_COOKIE_NAME}=${csrfToken}`
+		},
+		fetch: fetchFn
+	});
+}
 
 export function isRetryable(response: KyResponse) {
 	return retryCodes.includes(response.status);
 }
 
-type FetchType = typeof fetch;
+type FetchFn = typeof fetchFn;
 
-export type { FetchType };
+export type { FetchFn };
 export { baseOptions };
-export default fetch;
+export default fetchFn;

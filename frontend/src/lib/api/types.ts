@@ -36,9 +36,7 @@ export const PlaylistWithTracksSchema = PlaylistSchema.extend({
 export type PlaylistWithTracks = z.infer<typeof PlaylistWithTracksSchema>;
 
 export const SpotifyStatusSchema = z.object({
-	connected: z.boolean(),
-	spotify_user_id: z.string().nullable(),
-	token_expires: z.string().nullable()
+	connected: z.boolean()
 });
 
 export type SpotifyStatus = z.infer<typeof SpotifyStatusSchema>;

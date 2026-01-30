@@ -95,6 +95,24 @@ func (q *Queries) GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUse
 	return i, err
 }
 
+const getUserSpotifyTokenExpiration = `-- name: GetUserSpotifyTokenExpiration :one
+SELECT
+  st.expires_at
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1
+`
+
+func (q *Queries) GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getUserSpotifyTokenExpiration, id)
+	var expires_at pgtype.Timestamptz
+	err := row.Scan(&expires_at)
+	return expires_at, err
+}
+
 const ping = `-- name: Ping :exec
 SELECT
   1

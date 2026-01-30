@@ -1,4 +1,10 @@
-import { PlaylistSchema, PlaylistWithTracksSchema, type Playlist, type PlaylistWithTracks } from './types';
+import {
+	PlaylistSchema,
+	PlaylistWithTracksSchema,
+	type Playlist,
+	type PlaylistWithTracks
+} from './types';
+import fetchFn, { type FetchFn } from '@/http';
 
 const MOCK_PLAYLISTS: Playlist[] = [
 	{
@@ -81,27 +87,28 @@ const MOCK_TRACKS = [
 	}
 ];
 
-type FetchFn = typeof fetch;
-
-export async function getPlaylists(fetchFn: FetchFn = fetch): Promise<Playlist[]> {
+export async function getPlaylists(fetch: FetchFn = fetchFn): Promise<Playlist[]> {
 	// TODO: Replace with real API call when backend is ready
 	// const response = await fetchFn('/api/playlists');
 	// if (!response.ok) throw await response.json();
 	// const data = await response.json();
 	// return z.array(PlaylistSchema).parse(data);
 
-	void fetchFn; // Suppress unused variable warning for now
+	void fetch; // Suppress unused variable warning for now
 	return MOCK_PLAYLISTS.map((p) => PlaylistSchema.parse(p));
 }
 
-export async function getPlaylist(id: string, fetchFn: FetchFn = fetch): Promise<PlaylistWithTracks> {
+export async function getPlaylist(
+	id: string,
+	fetch: FetchFn = fetchFn
+): Promise<PlaylistWithTracks> {
 	// TODO: Replace with real API call when backend is ready
 	// const response = await fetchFn(`/api/playlists/${id}`);
 	// if (!response.ok) throw await response.json();
 	// const data = await response.json();
 	// return PlaylistWithTracksSchema.parse(data);
 
-	void fetchFn; // Suppress unused variable warning for now
+	void fetch; // Suppress unused variable warning for now
 	const playlist = MOCK_PLAYLISTS.find((p) => p.id === id);
 	if (!playlist) {
 		throw { code: 'not_found', message: 'Playlist not found', status: 404 };
@@ -113,11 +120,11 @@ export async function getPlaylist(id: string, fetchFn: FetchFn = fetch): Promise
 	});
 }
 
-export async function addPlaylistToSpotify(id: string, fetchFn: FetchFn = fetch): Promise<void> {
+export async function addPlaylistToSpotify(id: string, fetch: FetchFn = fetchFn): Promise<void> {
 	// TODO: Replace with real API call when backend is ready
 	// const response = await fetchFn(`/api/playlists/${id}/spotify`, { method: 'POST' });
 	// if (!response.ok) throw await response.json();
 
-	void fetchFn; // Suppress unused variable warning for now
+	void fetch; // Suppress unused variable warning for now
 	console.log(`Adding playlist ${id} to Spotify (mock)`);
 }

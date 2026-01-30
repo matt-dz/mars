@@ -64,3 +64,13 @@ ON CONFLICT (spotify_user_id)
     scope = EXCLUDED.scope,
     refresh_token = EXCLUDED.refresh_token,
     expires_at = EXCLUDED.expires_at;
+
+-- name: GetUserSpotifyTokenExpiration :one
+SELECT
+  st.expires_at
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1;
