@@ -88,10 +88,10 @@ paths:
               examples:
                 access:
                   summary: Access token cookie
-                  value: access=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                  value: access=<access_token>; HttpOnly; Secure; SameSite=Lax; Path=/
                 refresh:
                   summary: Refresh token cookie
-                  value: refresh=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                  value: refresh=<refresh_token>; HttpOnly; Secure; SameSite=Lax; Path=/
                 csrf:
                   summary: CSRF token cookie
                   value: csrf=<csrf_token>; Secure; SameSite=Lax; Path=/
@@ -144,10 +144,10 @@ paths:
               examples:
                 access:
                   summary: Access token cookie
-                  value: access=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                  value: access=<access_token>; HttpOnly; Secure; SameSite=Lax; Path=/
                 refresh:
                   summary: Refresh token cookie
-                  value: refresh=<jwt_token>; HttpOnly; Secure; SameSite=Lax; Path=/
+                  value: refresh=<refresh_token>; HttpOnly; Secure; SameSite=Lax; Path=/
                 csrf:
                   summary: CSRF token cookie
                   value: csrf=<csrf_token>; Secure; SameSite=Lax; Path=/
@@ -237,6 +237,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/oauth/spotify/token/refresh:
+    post:
+      summary: Refresh a Spotify OAuth2.0 token.
+      tags:
+        - OAuth
+      description: >
+        Request the OAuth2.0 tokens for a user be refreshed.
+        Must be an admin to refresh spotify tokens.
+      parameters:
+        - $ref: "#/components/parameters/AccessTokenHeader"
+        - $ref: "#/components/parameters/CsrfTokenHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotifyRefreshTokenRequest"
+      responses:
+        "204":
+          description: Successfully refreshed tokens
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - Insufficient Permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found - User does not exist or they do not have any tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/spotify/status:
     get:
       summary: Get Spotify OAuth2.0 status.
@@ -261,6 +312,13 @@ paths:
 
 components:
   parameters:
+    AccessTokenHeader:
+      name: access
+      in: cookie
+      schema:
+        type: string
+      description: Access token
+
     CsrfTokenHeader:
       name: X-CSRF-Token
       in: header
@@ -279,6 +337,15 @@ components:
       description: Refresh token
 
   schemas:
+    SpotifyRefreshTokenRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+        - user_id
+
     SpotifyStatusResponse:
       type: object
       properties:

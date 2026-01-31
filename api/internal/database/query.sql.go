@@ -95,6 +95,42 @@ func (q *Queries) GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUse
 	return i, err
 }
 
+const getUserSpotifyId = `-- name: GetUserSpotifyId :one
+SELECT
+  u.spotify_id
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1
+`
+
+func (q *Queries) GetUserSpotifyId(ctx context.Context, id uuid.UUID) (pgtype.Text, error) {
+	row := q.db.QueryRow(ctx, getUserSpotifyId, id)
+	var spotify_id pgtype.Text
+	err := row.Scan(&spotify_id)
+	return spotify_id, err
+}
+
+const getUserSpotifyRefreshToken = `-- name: GetUserSpotifyRefreshToken :one
+SELECT
+  st.refresh_token
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1
+`
+
+func (q *Queries) GetUserSpotifyRefreshToken(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getUserSpotifyRefreshToken, id)
+	var refresh_token string
+	err := row.Scan(&refresh_token)
+	return refresh_token, err
+}
+
 const getUserSpotifyTokenExpiration = `-- name: GetUserSpotifyTokenExpiration :one
 SELECT
   st.expires_at
@@ -160,6 +196,40 @@ type UpdateUserSpotifyIDParams struct {
 
 func (q *Queries) UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error {
 	_, err := q.db.Exec(ctx, updateUserSpotifyID, arg.SpotifyID, arg.ID)
+	return err
+}
+
+const updateUserSpotifyTokens = `-- name: UpdateUserSpotifyTokens :exec
+UPDATE
+  spotify_tokens
+SET
+  access_token = $1,
+  refresh_token = $2,
+  token_type = $3,
+  scope = $4,
+  expires_at = $5
+WHERE
+  spotify_user_id = $6
+`
+
+type UpdateUserSpotifyTokensParams struct {
+	AccessToken   string
+	RefreshToken  string
+	TokenType     string
+	Scope         string
+	ExpiresAt     pgtype.Timestamptz
+	SpotifyUserID string
+}
+
+func (q *Queries) UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpotifyTokensParams) error {
+	_, err := q.db.Exec(ctx, updateUserSpotifyTokens,
+		arg.AccessToken,
+		arg.RefreshToken,
+		arg.TokenType,
+		arg.Scope,
+		arg.ExpiresAt,
+		arg.SpotifyUserID,
+	)
 	return err
 }
 

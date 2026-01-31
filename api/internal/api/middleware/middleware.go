@@ -17,6 +17,7 @@ import (
 	"mars/internal/env"
 	marsjwt "mars/internal/jwt"
 	"mars/internal/log"
+	"mars/internal/role"
 	"mars/internal/tokens"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -240,6 +241,18 @@ func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.Auth
 			Code:    apierror.InternalServerError,
 			Status:  apierror.InternalServerError.Status(),
 			Message: "internal server error",
+			ErrorID: reqid,
+		}
+	}
+
+	// Authorize user
+	roleClaim := jwtAccess.Claims.(jwt.MapClaims)["role"].(string)
+	userRole := role.ToRole(roleClaim)
+	if input.RequestValidationInput.Request.URL.Path == "/api/oauth/spotify/token/refresh" && userRole != role.RoleAdmin {
+		return &apierror.Error{
+			Code:    apierror.InsufficientPermissions,
+			Status:  apierror.InsufficientPermissions.Status(),
+			Message: "user does not have admin role",
 			ErrorID: reqid,
 		}
 	}

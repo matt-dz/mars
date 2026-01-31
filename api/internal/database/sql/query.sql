@@ -74,3 +74,35 @@ FROM
 WHERE
   u.spotify_id IS NOT NULL
   AND u.id = $1;
+
+-- name: GetUserSpotifyRefreshToken :one
+SELECT
+  st.refresh_token
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1;
+
+-- name: GetUserSpotifyId :one
+SELECT
+  u.spotify_id
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1;
+
+-- name: UpdateUserSpotifyTokens :exec
+UPDATE
+  spotify_tokens
+SET
+  access_token = $1,
+  refresh_token = $2,
+  token_type = $3,
+  scope = $4,
+  expires_at = $5
+WHERE
+  spotify_user_id = $6;

@@ -16,10 +16,13 @@ type Querier interface {
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
+	GetUserSpotifyId(ctx context.Context, id uuid.UUID) (pgtype.Text, error)
+	GetUserSpotifyRefreshToken(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error)
 	Ping(ctx context.Context) error
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error
+	UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpotifyTokensParams) error
 	UpsertUserSpotifyTokens(ctx context.Context, arg UpsertUserSpotifyTokensParams) error
 }
 

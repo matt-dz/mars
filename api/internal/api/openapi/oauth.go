@@ -264,3 +264,152 @@ func (s Server) GetApiSpotifyStatus(
 		Connected: true,
 	}, nil
 }
+
+func (s Server) PostApiOauthSpotifyTokenRefresh(
+	ctx context.Context, request PostApiOauthSpotifyTokenRefreshRequestObject) (
+	PostApiOauthSpotifyTokenRefreshResponseObject, error,
+) {
+	reqid := requestid.FromContext(ctx)
+
+	// Get user Spotify refresh token
+	s.Env.Logger.DebugContext(ctx, "getting spotify refresh tokens")
+	refreshToken, err := s.Env.Database.GetUserSpotifyRefreshToken(ctx, request.Body.UserId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		s.Env.Logger.ErrorContext(ctx, "no rows returned, user has no spotify integration", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh404JSONResponse{
+			Message: "no spotify integration found",
+			Status:  apierror.NoSpotifyIntegration.Status(),
+			Code:    apierror.NoSpotifyIntegration.String(),
+			ErrorId: reqid,
+		}, nil
+	} else if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get spotify refresh tokens", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Refresh tokens
+	s.Env.Logger.DebugContext(ctx, "refreshing spotify tokens")
+	const endpoint = "https://accounts.spotify.com/api/token"
+	form := url.Values{}
+	form.Add("grant_type", "refresh_token")
+	form.Add("refresh_token", refreshToken)
+	body := form.Encode()
+	req, err := retryablehttp.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to create request", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	clientid := os.Getenv("SPOTIFY_CLIENT_ID")
+	clientsecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
+	if clientid == "" {
+		s.Env.Logger.ErrorContext(ctx, "SPOTIFY_CLIENT_ID not set")
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	if clientsecret == "" {
+		s.Env.Logger.ErrorContext(ctx, "SPOTIFY_CLIENT_SECRET not set")
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	authorization := "Basic " + base64.StdEncoding.EncodeToString([]byte(clientid+":"+clientsecret))
+	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", authorization)
+
+	res, err := s.Env.HTTP.Do(req)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to send exchange request", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(res.Body)
+		s.Env.Logger.ErrorContext(ctx, "refresh request failed with non-200 status", slog.String("body", string(body)))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	var refreshResponse struct {
+		ExpiresIn    int    `json:"expires_in"`
+		AccessToken  string `json:"access_token"`
+		TokenType    string `json:"token_type"`
+		RefreshToken string `json:"refresh_token"`
+		Scope        string `json:"scope"`
+	}
+	err = json.NewDecoder(res.Body).Decode(&refreshResponse)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to decode spotify response", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	if refreshResponse.RefreshToken == "" {
+		refreshResponse.RefreshToken = refreshToken
+	}
+
+	// Update tokens
+	s.Env.Logger.DebugContext(ctx, "updating spotify tokens in database")
+	userid, err := s.Env.Database.GetUserSpotifyId(ctx, request.Body.UserId)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get user spotify id", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	expiration := time.Duration(refreshResponse.ExpiresIn) * time.Second
+	err = s.Env.Database.UpdateUserSpotifyTokens(ctx, database.UpdateUserSpotifyTokensParams{
+		AccessToken:  refreshResponse.AccessToken,
+		RefreshToken: refreshResponse.RefreshToken,
+		TokenType:    refreshResponse.TokenType,
+		Scope:        refreshResponse.Scope,
+		ExpiresAt: pgtype.Timestamptz{
+			Time:  time.Now().Add(expiration),
+			Valid: true,
+		},
+		SpotifyUserID: userid.String,
+	})
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to update tokens in database", slog.Any("error", err))
+		return PostApiOauthSpotifyTokenRefresh500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	return PostApiOauthSpotifyTokenRefresh204Response{}, nil
+}
