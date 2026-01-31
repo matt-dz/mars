@@ -3,16 +3,17 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { goto } from '$app/navigation';
 	import type { User } from '$lib/api/types';
+	import { resolve } from '$app/paths';
 
 	let { user }: { user: User } = $props();
 
 	function navigateToIntegrations() {
-		goto('/integrations');
+		goto(resolve('/integrations'));
 	}
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
-		goto('/login');
+		goto(resolve('/login'));
 	}
 </script>
 

@@ -41,11 +41,5 @@ export const SpotifyStatusSchema = z.object({
 
 export type SpotifyStatus = z.infer<typeof SpotifyStatusSchema>;
 
-export const ApiErrorSchema = z.object({
-	code: z.string(),
-	error_id: z.number(),
-	message: z.string(),
-	status: z.number()
-});
-
-export type ApiError = z.infer<typeof ApiErrorSchema>;
+// Re-export error types from errors.ts for backwards compatibility
+export { ApiErrorSchema, type ApiError } from './errors';

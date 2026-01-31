@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import TrackList from '$lib/components/app/TrackList.svelte';
 	import { addPlaylistToSpotify } from '$lib/api/playlists';
+	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -34,7 +35,7 @@
 
 <div class="container mx-auto px-4 py-8">
 	<div class="mb-6">
-		<a href="/" class="text-sm text-muted-foreground hover:text-foreground"
+		<a href={resolve('/')} class="text-sm text-muted-foreground hover:text-foreground"
 			>&larr; Back to playlists</a
 		>
 	</div>

@@ -2,10 +2,23 @@ import { getCsrfToken } from '@/http';
 import { SpotifyStatusSchema, type SpotifyStatus } from './types';
 import { CSRF_HEADER } from '@/auth';
 import fetchFn, { type FetchFn } from '@/http';
+import { isHTTPError } from 'ky';
+import { ApiErrorSchema, HTTPError } from './errors';
 
 export async function getSpotifyStatus(fetch: FetchFn = fetchFn): Promise<SpotifyStatus> {
-	const res = await fetch.get('api/spotify/status').json();
-	return SpotifyStatusSchema.parse(res);
+	try {
+		const res = await fetch.get('api/spotify/status').json();
+		return SpotifyStatusSchema.parse(res);
+	} catch (e) {
+		if (isHTTPError(e)) {
+			const err = ApiErrorSchema.safeParse(await e.response.clone().json());
+			if (err.success) {
+				throw new HTTPError(err.data.status, err.data.message, err.data.code, err.data.error_id);
+			}
+			throw new HTTPError(e.response.status, await e.response.text());
+		}
+		throw e;
+	}
 }
 
 export function getSpotifyAuthUrl(): string {

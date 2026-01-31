@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
+	import { resolve } from '$app/paths';
 	import type { Playlist } from '$lib/api/types';
 
 	let { playlist }: { playlist: Playlist } = $props();
@@ -15,7 +16,7 @@
 	);
 </script>
 
-<a href="/playlist/{playlist.id}" class="block">
+<a href={resolve('/playlist/{playlist.id}')} class="block">
 	<Card.Root class="transition-shadow hover:shadow-md">
 		<Card.Header>
 			<div class="flex items-start justify-between gap-2">

@@ -3,6 +3,7 @@
 	import PlaylistFilters from '$lib/components/app/PlaylistFilters.svelte';
 	import type { PageData } from './$types';
 	import type { Playlist } from '$lib/api/types';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let { data }: { data: PageData } = $props();
 
@@ -13,7 +14,7 @@
 		if (period === 'all') return playlists;
 
 		const now = new Date();
-		const cutoff = new Date();
+		const cutoff = new SvelteDate();
 
 		if (period === 'week') {
 			cutoff.setDate(now.getDate() - 7);
