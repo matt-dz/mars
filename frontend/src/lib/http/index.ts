@@ -92,7 +92,7 @@ async function refreshAccessToken(kyInstance: KyInstance): Promise<Response> {
  */
 function createRefreshHooks(kyInstance: KyInstance) {
 	return [
-		async (request: Request, _options: Options, response: Response): Promise<Response | void> => {
+		async (request: Request, options: Options, response: Response): Promise<Response | void> => {
 			// Only handle 401 errors
 			if (response.status !== 401) {
 				return;
@@ -115,7 +115,7 @@ function createRefreshHooks(kyInstance: KyInstance) {
 				if (errorBody.code && isUnrecoverableAuthError(errorBody.code)) {
 					console.debug('[auth] Unrecoverable error:', errorBody.code);
 					if (browser) {
-						window.location.href = '/login';
+						goto(resolve('/login'));
 					}
 					throw new AuthenticationError(errorBody.message, errorBody.code);
 				}
@@ -180,15 +180,12 @@ function createRefreshHooks(kyInstance: KyInstance) {
 					const setCookieHeaders = refreshResponse.headers.getSetCookie();
 					console.debug('[auth] Extracted', setCookieHeaders.length, 'Set-Cookie headers');
 
-					let accessToken = '';
 					let refreshToken = '';
 					let csrfToken = '';
 
 					for (const setCookie of setCookieHeaders) {
 						const cookieValue = setCookie.split(';')[0];
-						if (cookieValue.startsWith(`${ACCESS_TOKEN_COOKIE_NAME}=`)) {
-							accessToken = cookieValue.split('=')[1];
-						} else if (cookieValue.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`)) {
+						if (cookieValue.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`)) {
 							refreshToken = cookieValue.split('=')[1];
 						} else if (cookieValue.startsWith(`${CSRF_TOKEN_COOKIE_NAME}=`)) {
 							csrfToken = cookieValue.split('=')[1];
@@ -197,8 +194,13 @@ function createRefreshHooks(kyInstance: KyInstance) {
 
 					console.debug('[auth] Retrying with fresh credentials');
 					// Create a new ky instance with the fresh credentials and retry
-					const retryInstance = wrapWithCredentials(fetch, accessToken, refreshToken, csrfToken);
-					return retryInstance(request);
+					return await ky(request, {
+						...options,
+						headers: {
+							...options?.headers,
+							Cookie: `${REFRESH_TOKEN_COOKIE_NAME}=${refreshToken}; ${ACCESS_TOKEN_COOKIE_NAME}=${parsed.data.access_token}; ${CSRF_TOKEN_COOKIE_NAME}=${csrfToken}`
+						}
+					});
 				}
 			} catch (e) {
 				if (e instanceof AuthenticationError) throw e;
@@ -217,7 +219,7 @@ const baseOptions: Options = {
 	timeout: 15 * 1000,
 	retry: {
 		retryOnTimeout: true,
-		limit: 4,
+		limit: 3,
 		backoffLimit: 10 * 1000,
 		statusCodes: retryCodes
 	},
@@ -235,6 +237,10 @@ const baseOptions: Options = {
 const fetchFn = ky.create(baseOptions);
 
 export function wrap(customFetch: typeof fetch): KyInstance {
+	return fetchFn.extend({ fetch: customFetch });
+}
+
+export function wrapWithRefreshHook(customFetch: typeof fetch): KyInstance {
 	// Create base instance first
 	if (browser) {
 		return fetchFn.extend({
@@ -256,17 +262,10 @@ export function wrapWithCredentials(
 	refreshToken: string,
 	csrfToken: string | null = ''
 ): KyInstance {
-	const instance = wrap(customFetch).extend({
+	return wrap(customFetch).extend({
 		headers: {
 			...baseOptions.headers,
 			Cookie: `${ACCESS_TOKEN_COOKIE_NAME}=${accessToken}; ${REFRESH_TOKEN_COOKIE_NAME}=${refreshToken}; ${CSRF_TOKEN_COOKIE_NAME}=${csrfToken}`
-		}
-	});
-
-	return instance.extend({
-		hooks: {
-			...baseOptions.hooks,
-			afterResponse: createRefreshHooks(instance)
 		}
 	});
 }

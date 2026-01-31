@@ -1,7 +1,8 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { UserSchema, type User } from '$lib/api/types';
-import { extractAuthCookies, patchCookies, wrapWithCredentials } from '$lib/http';
-import { verifySession } from '@/api';
+import { extractAuthCookies, patchCookies, wrapWithCredentials } from '@/http';
+import { refreshSession, verifySession } from '@/api';
+import { HTTPError, isRecoverableAuthError, isUnrecoverableAuthError } from '@/api/errors';
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/api/'];
@@ -19,15 +20,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
+	const tokens = extractAuthCookies(event.cookies);
+	if (!tokens.refreshToken || !tokens.csrfToken) {
+		console.debug('[hooks] Missing access token, refresh token, or csrf token; skipping auth');
+		redirect(302, '/login');
+	}
+
 	// Verify session with backend - refresh logic is handled by the http module
 	try {
 		console.debug('[hooks] Verifying session...');
-		const tokens = extractAuthCookies(event.cookies);
-		if (!tokens.refreshToken || !tokens.csrfToken) {
-			console.debug('[hooks] Missing access token, refresh token, or csrf token; skipping auth');
-			redirect(302, '/login');
-		}
-		const response = await verifySession(
+		await verifySession(
 			wrapWithCredentials(
 				event.fetch,
 				tokens.accessToken ?? '',
@@ -35,19 +37,42 @@ export const handle: Handle = async ({ event, resolve }) => {
 				tokens.csrfToken
 			)
 		);
-
-		if (!response.ok) {
-			console.debug('[hooks] Verify returned non-ok status:', response.status);
-			redirect(302, '/login');
-		}
-
-		// Patch cookies
-		patchCookies(response, event.cookies);
-
 		console.debug('[hooks] Session verified');
 	} catch (e) {
 		console.debug('[hooks] Session verification failed:', e);
-		redirect(302, '/login');
+		if (!(e instanceof HTTPError)) {
+			throw e;
+		}
+		if (isUnrecoverableAuthError(e.errorCode)) {
+			console.debug('[hooks] Received an unrecoverable auth error, redirecting to login');
+			redirect(302, '/login');
+		}
+		if (!isRecoverableAuthError(e.errorCode)) {
+			console.debug('[hooks] Received an non-recoverable error, redirecting to login');
+			redirect(302, '/login');
+		}
+
+		try {
+			console.debug('[hooks] Refreshing session');
+			const res = await refreshSession(
+				wrapWithCredentials(
+					event.fetch,
+					tokens.accessToken ?? '',
+					tokens.refreshToken,
+					tokens.csrfToken
+				)
+			);
+
+			// Patch cookies
+			console.debug(
+				'[hooks] Successfully refreshed session, patching cookies:',
+				res.headers.getSetCookie()
+			);
+			patchCookies(res, event.cookies);
+		} catch (e2) {
+			console.debug('[hooks] Session refresh failed:', e);
+			throw e2;
+		}
 	}
 
 	// Session is valid - set user in locals

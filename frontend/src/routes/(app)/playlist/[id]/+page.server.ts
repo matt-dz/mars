@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getPlaylist } from '$lib/api/playlists';
-import { wrap } from '@/http';
+import { wrapWithRefreshHook } from '@/http';
 
 export const load: PageServerLoad = async ({ params, fetch }) => {
 	try {
-		const fetchFn = wrap(fetch);
+		const fetchFn = wrapWithRefreshHook(fetch);
 		const data = await getPlaylist(params.id, fetchFn);
 		return {
 			playlist: data,
