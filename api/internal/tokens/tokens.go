@@ -57,7 +57,7 @@ func CreateRefreshToken(userid uuid.UUID) (token string, err error) {
 		return "", err
 	}
 	return fmt.Sprintf(
-		"%s$%s", userid, base64.StdEncoding.EncodeToString(bytes)), nil
+		"%s$%s", userid, base64.URLEncoding.EncodeToString(bytes)), nil
 }
 
 func ParseRefreshToken(refreshtoken string) (

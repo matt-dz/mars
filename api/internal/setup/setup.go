@@ -35,7 +35,7 @@ func AppSecret(env *env.Env) error {
 		if _, err := rand.Reader.Read(bytes); err != nil {
 			return fmt.Errorf("creating app secret: %w", err)
 		}
-		secret = base64.StdEncoding.EncodeToString(bytes)
+		secret = base64.URLEncoding.EncodeToString(bytes)
 
 		// Write file
 		err = os.Mkdir("/data", dataDirectoryPerms)
