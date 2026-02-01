@@ -111,6 +111,7 @@ SELECT
   t.artists,
   t.href,
   t.image_url,
+  t.uri,
   pt.plays
 FROM
   playlist_tracks pt
@@ -128,6 +129,7 @@ type GetPlaylistTracksRow struct {
 	Artists  []string
 	Href     string
 	ImageUrl pgtype.Text
+	Uri      string
 	Plays    int32
 }
 
@@ -146,6 +148,7 @@ func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) (
 			&i.Artists,
 			&i.Href,
 			&i.ImageUrl,
+			&i.Uri,
 			&i.Plays,
 		); err != nil {
 			return nil, err

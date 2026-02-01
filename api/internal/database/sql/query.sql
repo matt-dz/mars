@@ -236,6 +236,7 @@ SELECT
   t.artists,
   t.href,
   t.image_url,
+  t.uri,
   pt.plays
 FROM
   playlist_tracks pt

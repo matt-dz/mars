@@ -586,6 +586,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/integrations/spotify/playlist:
+    post:
+      summary: Create a spotify playlist based on a mars playlist for a user.
+      tags:
+        - Spotify
+      description: >
+        Create a spotify playlist from a mars playlist for a given
+        user. Requires the user to have a spotify integration.
+      parameters:
+        - $ref: "#/components/parameters/AccessTokenHeader"
+        - $ref: "#/components/parameters/CsrfTokenHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlaylistRequest"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotifyPlaylist"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found - User does not have a spotify integration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     AccessTokenHeader:
@@ -613,6 +662,30 @@ components:
       description: Refresh token
 
   schemas:
+    CreatePlaylistRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        playlist_id:
+          type: string
+          format: uuid
+      required:
+        - user_id
+        - playlist_id
+
+    SpotifyPlaylist:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+      required:
+        - id
+        - url
+
     User:
       type: object
       properties:

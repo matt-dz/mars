@@ -160,7 +160,7 @@ func runCreateWeeklyPlaylist(ctx context.Context, logger *slog.Logger, client ma
 		)
 
 		// days til friday
-		daysUntil := ((int(time.Sunday) - int(now.Weekday())) + 7) % 7
+		daysUntil := ((int(time.Friday) - int(now.Weekday())) + 7) % 7
 
 		// friday, but we're past target
 		if daysUntil == 0 && now.After(target) {
