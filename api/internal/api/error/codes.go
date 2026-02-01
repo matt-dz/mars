@@ -17,6 +17,7 @@ const (
 	InsufficientPermissions ErrorCode = "insufficient_permissions"
 	NoSpotifyIntegration    ErrorCode = "no_spotify_integration"
 	NoTracksListened        ErrorCode = "no_tracks_listened"
+	PlaylistNotFound        ErrorCode = "playlist_not_found"
 )
 
 var errorCodeToStatusCode = map[ErrorCode]int{
@@ -32,6 +33,7 @@ var errorCodeToStatusCode = map[ErrorCode]int{
 	InvalidCredentials:      http.StatusUnauthorized,
 	NoSpotifyIntegration:    http.StatusNotFound,
 	NoTracksListened:        http.StatusConflict,
+	PlaylistNotFound:        http.StatusNotFound,
 }
 
 func (ec ErrorCode) Status() int {

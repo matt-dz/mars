@@ -533,8 +533,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        "403":
-          description: Forbidden
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/playlists/{id}:
+    get:
+      summary: Get a personal playlist
+      tags:
+        - Playlists
+      description: >
+        Get a personal playlist and its tracks with a given id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Playlist ID
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AccessTokenHeader"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Playlist"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:
@@ -573,6 +609,44 @@ components:
       description: Refresh token
 
   schemas:
+    PlaylistTrack:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        artists:
+          type: array
+          items:
+            type: string
+        image_url:
+          type: string
+      required:
+        - id
+        - name
+        - artists
+
+    Playlist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        tracks:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaylistTrack"
+      required:
+        - id
+        - name
+        - type
+        - tracks
+
     ListPlaylistItem:
       type: object
       properties:

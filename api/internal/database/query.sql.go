@@ -104,6 +104,57 @@ func (q *Queries) CreateServiceAccount(ctx context.Context, arg CreateServiceAcc
 	return id, err
 }
 
+const getPlaylistTracks = `-- name: GetPlaylistTracks :many
+SELECT
+  t.id,
+  t.name,
+  t.artists,
+  t.href,
+  t.image_url
+FROM
+  playlist_tracks pt
+  JOIN tracks t ON pt.track_id = t.id
+WHERE
+  pt.playlist_id = $1
+ORDER BY
+  pt.plays DESC,
+  pt.track_id ASC
+`
+
+type GetPlaylistTracksRow struct {
+	ID       string
+	Name     string
+	Artists  []string
+	Href     string
+	ImageUrl pgtype.Text
+}
+
+func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]GetPlaylistTracksRow, error) {
+	rows, err := q.db.Query(ctx, getPlaylistTracks, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPlaylistTracksRow
+	for rows.Next() {
+		var i GetPlaylistTracksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Artists,
+			&i.Href,
+			&i.ImageUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
   id,
@@ -163,6 +214,36 @@ func (q *Queries) GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUserPlaylist = `-- name: GetUserPlaylist :one
+SELECT
+  id,
+  playlist_type,
+  name
+FROM
+  playlists
+WHERE
+  user_id = $1
+  AND id = $2
+`
+
+type GetUserPlaylistParams struct {
+	UserID uuid.UUID
+	ID     uuid.UUID
+}
+
+type GetUserPlaylistRow struct {
+	ID           uuid.UUID
+	PlaylistType PlaylistType
+	Name         string
+}
+
+func (q *Queries) GetUserPlaylist(ctx context.Context, arg GetUserPlaylistParams) (GetUserPlaylistRow, error) {
+	row := q.db.QueryRow(ctx, getUserPlaylist, arg.UserID, arg.ID)
+	var i GetUserPlaylistRow
+	err := row.Scan(&i.ID, &i.PlaylistType, &i.Name)
+	return i, err
 }
 
 const getUserPlaylists = `-- name: GetUserPlaylists :many

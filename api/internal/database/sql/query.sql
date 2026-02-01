@@ -207,3 +207,30 @@ WHERE
   user_id = $1
 ORDER BY
   created_at DESC;
+
+-- name: GetUserPlaylist :one
+SELECT
+  id,
+  playlist_type,
+  name
+FROM
+  playlists
+WHERE
+  user_id = $1
+  AND id = $2;
+
+-- name: GetPlaylistTracks :many
+SELECT
+  t.id,
+  t.name,
+  t.artists,
+  t.href,
+  t.image_url
+FROM
+  playlist_tracks pt
+  JOIN tracks t ON pt.track_id = t.id
+WHERE
+  pt.playlist_id = $1
+ORDER BY
+  pt.plays DESC,
+  pt.track_id ASC;

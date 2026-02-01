@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"mars/internal/tokens"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -207,4 +209,76 @@ func (s Server) GetApiMePlaylists(
 		}
 	}
 	return GetApiMePlaylists200JSONResponse{Playlists: resp}, nil
+}
+
+func (s Server) GetApiPlaylistsId(
+	ctx context.Context, request GetApiPlaylistsIdRequestObject) (
+	GetApiPlaylistsIdResponseObject, error,
+) {
+	reqid := requestid.FromContext(ctx)
+	userid, err := tokens.UserIDFromContext(ctx)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get userid", slog.Any("error", err))
+		return GetApiPlaylistsId500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Get playlist and tracks
+	s.Env.Logger.DebugContext(ctx, "getting playlist")
+	playlist, err := s.Env.Database.GetUserPlaylist(ctx, database.GetUserPlaylistParams{
+		UserID: userid,
+		ID:     request.Id,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		s.Env.Logger.ErrorContext(ctx, "no rows returned - playlist does not exist", slog.Any("error", err))
+		return GetApiPlaylistsId404JSONResponse{
+			Message: "playlist not found",
+			Status:  apierror.PlaylistNotFound.Status(),
+			Code:    apierror.PlaylistNotFound.String(),
+			ErrorId: reqid,
+		}, nil
+	} else if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get user playlist", slog.Any("error", err))
+		return GetApiPlaylistsId500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	tracks, err := s.Env.Database.GetPlaylistTracks(ctx, playlist.ID)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get playlist tracks", slog.Any("error", err))
+		return GetApiPlaylistsId500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Return response
+	res := GetApiPlaylistsId200JSONResponse{
+		Id:     playlist.ID,
+		Name:   playlist.Name,
+		Type:   string(playlist.PlaylistType),
+		Tracks: make([]PlaylistTrack, len(tracks)),
+	}
+	for i, t := range tracks {
+		res.Tracks[i] = PlaylistTrack{
+			Artists: t.Artists,
+			Id:      t.ID,
+			Name:    t.Name,
+		}
+		if t.ImageUrl.Valid {
+			res.Tracks[i].ImageUrl = &t.ImageUrl.String
+		}
+	}
+
+	return res, nil
 }
