@@ -194,3 +194,16 @@ RETURNING
 -- name: AddPlaylistTrack :exec
 INSERT INTO playlist_tracks (playlist_id, track_id, plays)
   VALUES ($1, $2, $3);
+
+-- name: GetUserPlaylists :many
+SELECT
+  id,
+  playlist_type,
+  name,
+  created_at
+FROM
+  playlists
+WHERE
+  user_id = $1
+ORDER BY
+  created_at DESC;

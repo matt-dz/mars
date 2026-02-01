@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -76,6 +77,19 @@ type Error struct {
 	ErrorId uint64 `json:"error_id"`
 	Message string `json:"message"`
 	Status  int    `json:"status"`
+}
+
+// ListPlaylistItem defines model for ListPlaylistItem.
+type ListPlaylistItem struct {
+	CreatedAt time.Time          `json:"created_at"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	Type      string             `json:"type"`
+}
+
+// ListPlaylists defines model for ListPlaylists.
+type ListPlaylists struct {
+	Playlists []ListPlaylistItem `json:"playlists"`
 }
 
 // ListUsersResponse defines model for ListUsersResponse.
@@ -169,6 +183,12 @@ type PostApiIntegrationsSpotifyTracksSyncParams struct {
 	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
 	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
 
+	// Access Access token
+	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
+}
+
+// GetApiMePlaylistsParams defines parameters for GetApiMePlaylists.
+type GetApiMePlaylistsParams struct {
 	// Access Access token
 	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
 }
@@ -373,6 +393,9 @@ type ClientInterface interface {
 
 	PostApiLogin(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApiMePlaylists request
+	GetApiMePlaylists(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiOauthSpotifyTokenWithBody request with any body
 	PostApiOauthSpotifyTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -484,6 +507,18 @@ func (c *Client) PostApiLoginWithBody(ctx context.Context, contentType string, b
 
 func (c *Client) PostApiLogin(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiLoginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiMePlaylists(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiMePlaylistsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -879,6 +914,50 @@ func NewPostApiLoginRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
+// NewGetApiMePlaylistsRequest generates requests for GetApiMePlaylists
+func NewGetApiMePlaylistsRequest(server string, params *GetApiMePlaylistsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/me/playlists")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
+}
+
 // NewPostApiOauthSpotifyTokenRequest calls the generic PostApiOauthSpotifyToken builder with application/json body
 func NewPostApiOauthSpotifyTokenRequest(server string, body PostApiOauthSpotifyTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1247,6 +1326,9 @@ type ClientWithResponsesInterface interface {
 
 	PostApiLoginWithResponse(ctx context.Context, body PostApiLoginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiLoginResponse, error)
 
+	// GetApiMePlaylistsWithResponse request
+	GetApiMePlaylistsWithResponse(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*GetApiMePlaylistsResponse, error)
+
 	// PostApiOauthSpotifyTokenWithBodyWithResponse request with any body
 	PostApiOauthSpotifyTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error)
 
@@ -1386,6 +1468,31 @@ func (r PostApiLoginResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostApiLoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiMePlaylistsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ListPlaylists
+	JSON401      *Error
+	JSON403      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiMePlaylistsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiMePlaylistsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1608,6 +1715,15 @@ func (c *ClientWithResponses) PostApiLoginWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParsePostApiLoginResponse(rsp)
+}
+
+// GetApiMePlaylistsWithResponse request returning *GetApiMePlaylistsResponse
+func (c *ClientWithResponses) GetApiMePlaylistsWithResponse(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*GetApiMePlaylistsResponse, error) {
+	rsp, err := c.GetApiMePlaylists(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiMePlaylistsResponse(rsp)
 }
 
 // PostApiOauthSpotifyTokenWithBodyWithResponse request with arbitrary body returning *PostApiOauthSpotifyTokenResponse
@@ -1875,6 +1991,53 @@ func ParsePostApiLoginResponse(rsp *http.Response) (*PostApiLoginResponse, error
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiMePlaylistsResponse parses an HTTP response from a GetApiMePlaylistsWithResponse call
+func ParseGetApiMePlaylistsResponse(rsp *http.Response) (*GetApiMePlaylistsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiMePlaylistsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListPlaylists
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest Error
@@ -2180,6 +2343,9 @@ type ServerInterface interface {
 	// User login
 	// (POST /api/login)
 	PostApiLogin(w http.ResponseWriter, r *http.Request)
+	// Get personal playlists
+	// (GET /api/me/playlists)
+	GetApiMePlaylists(w http.ResponseWriter, r *http.Request, params GetApiMePlaylistsParams)
 	// Get Spotify OAuth2.0 tokens.
 	// (POST /api/oauth/spotify/token)
 	PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request)
@@ -2231,6 +2397,12 @@ func (_ Unimplemented) PostApiIntegrationsSpotifyTracksSync(w http.ResponseWrite
 // User login
 // (POST /api/login)
 func (_ Unimplemented) PostApiLogin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get personal playlists
+// (GET /api/me/playlists)
+func (_ Unimplemented) GetApiMePlaylists(w http.ResponseWriter, r *http.Request, params GetApiMePlaylistsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2462,6 +2634,46 @@ func (siw *ServerInterfaceWrapper) PostApiLogin(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostApiLogin(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetApiMePlaylists operation middleware
+func (siw *ServerInterfaceWrapper) GetApiMePlaylists(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetApiMePlaylistsParams
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value AccessTokenHeader
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApiMePlaylists(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2824,6 +3036,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/login", wrapper.PostApiLogin)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/me/playlists", wrapper.GetApiMePlaylists)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/oauth/spotify/token", wrapper.PostApiOauthSpotifyToken)
 	})
 	r.Group(func(r chi.Router) {
@@ -3055,6 +3270,50 @@ func (response PostApiLogin401JSONResponse) VisitPostApiLoginResponse(w http.Res
 type PostApiLogin500JSONResponse Error
 
 func (response PostApiLogin500JSONResponse) VisitPostApiLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiMePlaylistsRequestObject struct {
+	Params GetApiMePlaylistsParams
+}
+
+type GetApiMePlaylistsResponseObject interface {
+	VisitGetApiMePlaylistsResponse(w http.ResponseWriter) error
+}
+
+type GetApiMePlaylists200JSONResponse ListPlaylists
+
+func (response GetApiMePlaylists200JSONResponse) VisitGetApiMePlaylistsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiMePlaylists401JSONResponse Error
+
+func (response GetApiMePlaylists401JSONResponse) VisitGetApiMePlaylistsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiMePlaylists403JSONResponse Error
+
+func (response GetApiMePlaylists403JSONResponse) VisitGetApiMePlaylistsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiMePlaylists500JSONResponse Error
+
+func (response GetApiMePlaylists500JSONResponse) VisitGetApiMePlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -3359,6 +3618,9 @@ type StrictServerInterface interface {
 	// User login
 	// (POST /api/login)
 	PostApiLogin(ctx context.Context, request PostApiLoginRequestObject) (PostApiLoginResponseObject, error)
+	// Get personal playlists
+	// (GET /api/me/playlists)
+	GetApiMePlaylists(ctx context.Context, request GetApiMePlaylistsRequestObject) (GetApiMePlaylistsResponseObject, error)
 	// Get Spotify OAuth2.0 tokens.
 	// (POST /api/oauth/spotify/token)
 	PostApiOauthSpotifyToken(ctx context.Context, request PostApiOauthSpotifyTokenRequestObject) (PostApiOauthSpotifyTokenResponseObject, error)
@@ -3548,6 +3810,32 @@ func (sh *strictHandler) PostApiLogin(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostApiLoginResponseObject); ok {
 		if err := validResponse.VisitPostApiLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetApiMePlaylists operation middleware
+func (sh *strictHandler) GetApiMePlaylists(w http.ResponseWriter, r *http.Request, params GetApiMePlaylistsParams) {
+	var request GetApiMePlaylistsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiMePlaylists(ctx, request.(GetApiMePlaylistsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiMePlaylists")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetApiMePlaylistsResponseObject); ok {
+		if err := validResponse.VisitGetApiMePlaylistsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

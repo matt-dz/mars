@@ -511,6 +511,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/me/playlists:
+    get:
+      summary: Get personal playlists
+      tags:
+        - Playlists
+      description: >
+        Get all personal playlists from the user that has made the request.
+      parameters:
+        - $ref: "#/components/parameters/AccessTokenHeader"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPlaylists"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     AccessTokenHeader:
@@ -538,6 +573,35 @@ components:
       description: Refresh token
 
   schemas:
+    ListPlaylistItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - name
+        - created_at
+
+    ListPlaylists:
+      type: object
+      properties:
+        playlists:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListPlaylistItem"
+      required:
+        - playlists
+
     DateParts:
       type: object
       additionalProperties: false

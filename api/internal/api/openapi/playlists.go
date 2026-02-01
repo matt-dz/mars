@@ -10,6 +10,7 @@ import (
 	apierror "mars/internal/api/error"
 	"mars/internal/api/requestid"
 	"mars/internal/database"
+	"mars/internal/tokens"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -166,4 +167,44 @@ func (s Server) PostApiPlaylists(
 	return PostApiPlaylists201JSONResponse{
 		Id: playlistID,
 	}, nil
+}
+
+func (s Server) GetApiMePlaylists(
+	ctx context.Context, request GetApiMePlaylistsRequestObject) (
+	GetApiMePlaylistsResponseObject, error,
+) {
+	reqid := requestid.FromContext(ctx)
+	userid, err := tokens.UserIDFromContext(ctx)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get userid", slog.Any("error", err))
+		return GetApiMePlaylists500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Get playlists
+	s.Env.Logger.DebugContext(ctx, "getting user playlists")
+	playlists, err := s.Env.Database.GetUserPlaylists(ctx, userid)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get playlists", slog.Any("error", err))
+		return GetApiMePlaylists500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+	resp := make([]ListPlaylistItem, len(playlists))
+	for i, pl := range playlists {
+		resp[i] = ListPlaylistItem{
+			CreatedAt: pl.CreatedAt.Time,
+			Id:        pl.ID,
+			Name:      pl.Name,
+			Type:      string(pl.PlaylistType),
+		}
+	}
+	return GetApiMePlaylists200JSONResponse{Playlists: resp}, nil
 }

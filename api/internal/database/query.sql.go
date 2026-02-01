@@ -165,6 +165,52 @@ func (q *Queries) GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, err
 	return items, nil
 }
 
+const getUserPlaylists = `-- name: GetUserPlaylists :many
+SELECT
+  id,
+  playlist_type,
+  name,
+  created_at
+FROM
+  playlists
+WHERE
+  user_id = $1
+ORDER BY
+  created_at DESC
+`
+
+type GetUserPlaylistsRow struct {
+	ID           uuid.UUID
+	PlaylistType PlaylistType
+	Name         string
+	CreatedAt    pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserPlaylists(ctx context.Context, userID uuid.UUID) ([]GetUserPlaylistsRow, error) {
+	rows, err := q.db.Query(ctx, getUserPlaylists, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserPlaylistsRow
+	for rows.Next() {
+		var i GetUserPlaylistsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PlaylistType,
+			&i.Name,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserRefreshToken = `-- name: GetUserRefreshToken :one
 SELECT
   refresh_token_hash,

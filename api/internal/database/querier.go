@@ -19,6 +19,7 @@ type Querier interface {
 	CreateServiceAccount(ctx context.Context, arg CreateServiceAccountParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, error)
+	GetUserPlaylists(ctx context.Context, userID uuid.UUID) ([]GetUserPlaylistsRow, error)
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
 	GetUserRole(ctx context.Context, id uuid.UUID) (Role, error)
 	GetUserSpotifyAccessToken(ctx context.Context, id uuid.UUID) (string, error)
