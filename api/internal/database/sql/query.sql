@@ -185,9 +185,9 @@ ORDER BY
   track_id ASC
 LIMIT 50;
 
--- name: CreateMonthlyPlaylist :one
+-- name: CreatePlaylist :one
 INSERT INTO playlists (user_id, playlist_type, name)
-  VALUES ($1, 'monthly', $2)
+  VALUES ($1, $2, $3)
 RETURNING
   id;
 

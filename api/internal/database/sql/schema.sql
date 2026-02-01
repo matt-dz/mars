@@ -43,7 +43,8 @@ DO $$
 BEGIN
   CREATE TYPE playlist_type AS enum (
     'weekly',
-    'monthly'
+    'monthly',
+    'custom'
 );
 EXCEPTION
   WHEN duplicate_object THEN

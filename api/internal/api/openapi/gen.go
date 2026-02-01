@@ -25,20 +25,9 @@ const (
 	BearerTokenAuthScopes = "BearerTokenAuth.Scopes"
 )
 
-// Defines values for CreateMonthlyPlaylistRequestMonth.
+// Defines values for CustomRequestType.
 const (
-	April     CreateMonthlyPlaylistRequestMonth = "april"
-	August    CreateMonthlyPlaylistRequestMonth = "august"
-	December  CreateMonthlyPlaylistRequestMonth = "december"
-	February  CreateMonthlyPlaylistRequestMonth = "february"
-	January   CreateMonthlyPlaylistRequestMonth = "january"
-	July      CreateMonthlyPlaylistRequestMonth = "july"
-	June      CreateMonthlyPlaylistRequestMonth = "june"
-	March     CreateMonthlyPlaylistRequestMonth = "march"
-	May       CreateMonthlyPlaylistRequestMonth = "may"
-	November  CreateMonthlyPlaylistRequestMonth = "november"
-	October   CreateMonthlyPlaylistRequestMonth = "october"
-	September CreateMonthlyPlaylistRequestMonth = "september"
+	Custom CustomRequestType = "custom"
 )
 
 // Defines values for Role.
@@ -47,19 +36,38 @@ const (
 	User  Role = "user"
 )
 
-// CreateMonthlyPlaylistRequest defines model for CreateMonthlyPlaylistRequest.
-type CreateMonthlyPlaylistRequest struct {
-	Month  CreateMonthlyPlaylistRequestMonth `json:"month"`
-	UserId openapi_types.UUID                `json:"user_id"`
-	Year   int                               `json:"year"`
-}
-
-// CreateMonthlyPlaylistRequestMonth defines model for CreateMonthlyPlaylistRequest.Month.
-type CreateMonthlyPlaylistRequestMonth string
+// Defines values for WeeklyOrMonthlyRequestType.
+const (
+	Monthly WeeklyOrMonthlyRequestType = "monthly"
+	Weekly  WeeklyOrMonthlyRequestType = "weekly"
+)
 
 // CreatePlaylistResponse defines model for CreatePlaylistResponse.
 type CreatePlaylistResponse struct {
 	Id openapi_types.UUID `json:"id"`
+}
+
+// CustomRequest defines model for CustomRequest.
+type CustomRequest struct {
+	EndDate   DateParts          `json:"end_date"`
+	StartDate DateParts          `json:"start_date"`
+	Type      CustomRequestType  `json:"type"`
+	UserId    openapi_types.UUID `json:"user_id"`
+}
+
+// CustomRequestType defines model for CustomRequest.Type.
+type CustomRequestType string
+
+// DateParts defines model for DateParts.
+type DateParts struct {
+	Day   int `json:"day"`
+	Month int `json:"month"`
+	Year  int `json:"year"`
+}
+
+// DateRangeRequest Request with a start date and a type. If type is custom, an end_date is required.
+type DateRangeRequest struct {
+	union json.RawMessage
 }
 
 // Error defines model for Error.
@@ -120,6 +128,16 @@ type SyncSpotifyTracksRequest struct {
 	UserId openapi_types.UUID `json:"user_id"`
 }
 
+// WeeklyOrMonthlyRequest defines model for WeeklyOrMonthlyRequest.
+type WeeklyOrMonthlyRequest struct {
+	StartDate DateParts                  `json:"start_date"`
+	Type      WeeklyOrMonthlyRequestType `json:"type"`
+	UserId    openapi_types.UUID         `json:"user_id"`
+}
+
+// WeeklyOrMonthlyRequestType defines model for WeeklyOrMonthlyRequest.Type.
+type WeeklyOrMonthlyRequestType string
+
 // AccessTokenHeader defines model for AccessTokenHeader.
 type AccessTokenHeader = string
 
@@ -164,8 +182,8 @@ type PostApiOauthSpotifyTokenRefreshParams struct {
 	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
 }
 
-// PostApiPlaylistsMonthlyParams defines parameters for PostApiPlaylistsMonthly.
-type PostApiPlaylistsMonthlyParams struct {
+// PostApiPlaylistsParams defines parameters for PostApiPlaylists.
+type PostApiPlaylistsParams struct {
 	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
 	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
 
@@ -196,8 +214,70 @@ type PostApiOauthSpotifyTokenJSONRequestBody = SpotifyTokenRequest
 // PostApiOauthSpotifyTokenRefreshJSONRequestBody defines body for PostApiOauthSpotifyTokenRefresh for application/json ContentType.
 type PostApiOauthSpotifyTokenRefreshJSONRequestBody = SpotifyRefreshTokenRequest
 
-// PostApiPlaylistsMonthlyJSONRequestBody defines body for PostApiPlaylistsMonthly for application/json ContentType.
-type PostApiPlaylistsMonthlyJSONRequestBody = CreateMonthlyPlaylistRequest
+// PostApiPlaylistsJSONRequestBody defines body for PostApiPlaylists for application/json ContentType.
+type PostApiPlaylistsJSONRequestBody = DateRangeRequest
+
+// AsWeeklyOrMonthlyRequest returns the union data inside the DateRangeRequest as a WeeklyOrMonthlyRequest
+func (t DateRangeRequest) AsWeeklyOrMonthlyRequest() (WeeklyOrMonthlyRequest, error) {
+	var body WeeklyOrMonthlyRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWeeklyOrMonthlyRequest overwrites any union data inside the DateRangeRequest as the provided WeeklyOrMonthlyRequest
+func (t *DateRangeRequest) FromWeeklyOrMonthlyRequest(v WeeklyOrMonthlyRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWeeklyOrMonthlyRequest performs a merge with any union data inside the DateRangeRequest, using the provided WeeklyOrMonthlyRequest
+func (t *DateRangeRequest) MergeWeeklyOrMonthlyRequest(v WeeklyOrMonthlyRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCustomRequest returns the union data inside the DateRangeRequest as a CustomRequest
+func (t DateRangeRequest) AsCustomRequest() (CustomRequest, error) {
+	var body CustomRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCustomRequest overwrites any union data inside the DateRangeRequest as the provided CustomRequest
+func (t *DateRangeRequest) FromCustomRequest(v CustomRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCustomRequest performs a merge with any union data inside the DateRangeRequest, using the provided CustomRequest
+func (t *DateRangeRequest) MergeCustomRequest(v CustomRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DateRangeRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DateRangeRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -306,10 +386,10 @@ type ClientInterface interface {
 	// GetApiOpenapiYaml request
 	GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostApiPlaylistsMonthlyWithBody request with any body
-	PostApiPlaylistsMonthlyWithBody(ctx context.Context, params *PostApiPlaylistsMonthlyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostApiPlaylistsWithBody request with any body
+	PostApiPlaylistsWithBody(ctx context.Context, params *PostApiPlaylistsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostApiPlaylistsMonthly(ctx context.Context, params *PostApiPlaylistsMonthlyParams, body PostApiPlaylistsMonthlyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostApiPlaylists(ctx context.Context, params *PostApiPlaylistsParams, body PostApiPlaylistsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiSpotifyStatus request
 	GetApiSpotifyStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -474,8 +554,8 @@ func (c *Client) GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEdi
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostApiPlaylistsMonthlyWithBody(ctx context.Context, params *PostApiPlaylistsMonthlyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostApiPlaylistsMonthlyRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) PostApiPlaylistsWithBody(ctx context.Context, params *PostApiPlaylistsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiPlaylistsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -486,8 +566,8 @@ func (c *Client) PostApiPlaylistsMonthlyWithBody(ctx context.Context, params *Po
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostApiPlaylistsMonthly(ctx context.Context, params *PostApiPlaylistsMonthlyParams, body PostApiPlaylistsMonthlyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostApiPlaylistsMonthlyRequest(c.Server, params, body)
+func (c *Client) PostApiPlaylists(ctx context.Context, params *PostApiPlaylistsParams, body PostApiPlaylistsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiPlaylistsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -938,19 +1018,19 @@ func NewGetApiOpenapiYamlRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewPostApiPlaylistsMonthlyRequest calls the generic PostApiPlaylistsMonthly builder with application/json body
-func NewPostApiPlaylistsMonthlyRequest(server string, params *PostApiPlaylistsMonthlyParams, body PostApiPlaylistsMonthlyJSONRequestBody) (*http.Request, error) {
+// NewPostApiPlaylistsRequest calls the generic PostApiPlaylists builder with application/json body
+func NewPostApiPlaylistsRequest(server string, params *PostApiPlaylistsParams, body PostApiPlaylistsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostApiPlaylistsMonthlyRequestWithBody(server, params, "application/json", bodyReader)
+	return NewPostApiPlaylistsRequestWithBody(server, params, "application/json", bodyReader)
 }
 
-// NewPostApiPlaylistsMonthlyRequestWithBody generates requests for PostApiPlaylistsMonthly with any type of body
-func NewPostApiPlaylistsMonthlyRequestWithBody(server string, params *PostApiPlaylistsMonthlyParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostApiPlaylistsRequestWithBody generates requests for PostApiPlaylists with any type of body
+func NewPostApiPlaylistsRequestWithBody(server string, params *PostApiPlaylistsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -958,7 +1038,7 @@ func NewPostApiPlaylistsMonthlyRequestWithBody(server string, params *PostApiPla
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/playlists/monthly")
+	operationPath := fmt.Sprintf("/api/playlists")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1180,10 +1260,10 @@ type ClientWithResponsesInterface interface {
 	// GetApiOpenapiYamlWithResponse request
 	GetApiOpenapiYamlWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOpenapiYamlResponse, error)
 
-	// PostApiPlaylistsMonthlyWithBodyWithResponse request with any body
-	PostApiPlaylistsMonthlyWithBodyWithResponse(ctx context.Context, params *PostApiPlaylistsMonthlyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiPlaylistsMonthlyResponse, error)
+	// PostApiPlaylistsWithBodyWithResponse request with any body
+	PostApiPlaylistsWithBodyWithResponse(ctx context.Context, params *PostApiPlaylistsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiPlaylistsResponse, error)
 
-	PostApiPlaylistsMonthlyWithResponse(ctx context.Context, params *PostApiPlaylistsMonthlyParams, body PostApiPlaylistsMonthlyJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiPlaylistsMonthlyResponse, error)
+	PostApiPlaylistsWithResponse(ctx context.Context, params *PostApiPlaylistsParams, body PostApiPlaylistsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiPlaylistsResponse, error)
 
 	// GetApiSpotifyStatusWithResponse request
 	GetApiSpotifyStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiSpotifyStatusResponse, error)
@@ -1384,7 +1464,7 @@ func (r GetApiOpenapiYamlResponse) StatusCode() int {
 	return 0
 }
 
-type PostApiPlaylistsMonthlyResponse struct {
+type PostApiPlaylistsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *CreatePlaylistResponse
@@ -1392,12 +1472,12 @@ type PostApiPlaylistsMonthlyResponse struct {
 	JSON401      *Error
 	JSON403      *Error
 	JSON404      *Error
-	JSON422      *Error
+	JSON409      *Error
 	JSON500      *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r PostApiPlaylistsMonthlyResponse) Status() string {
+func (r PostApiPlaylistsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1405,7 +1485,7 @@ func (r PostApiPlaylistsMonthlyResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostApiPlaylistsMonthlyResponse) StatusCode() int {
+func (r PostApiPlaylistsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1573,21 +1653,21 @@ func (c *ClientWithResponses) GetApiOpenapiYamlWithResponse(ctx context.Context,
 	return ParseGetApiOpenapiYamlResponse(rsp)
 }
 
-// PostApiPlaylistsMonthlyWithBodyWithResponse request with arbitrary body returning *PostApiPlaylistsMonthlyResponse
-func (c *ClientWithResponses) PostApiPlaylistsMonthlyWithBodyWithResponse(ctx context.Context, params *PostApiPlaylistsMonthlyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiPlaylistsMonthlyResponse, error) {
-	rsp, err := c.PostApiPlaylistsMonthlyWithBody(ctx, params, contentType, body, reqEditors...)
+// PostApiPlaylistsWithBodyWithResponse request with arbitrary body returning *PostApiPlaylistsResponse
+func (c *ClientWithResponses) PostApiPlaylistsWithBodyWithResponse(ctx context.Context, params *PostApiPlaylistsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiPlaylistsResponse, error) {
+	rsp, err := c.PostApiPlaylistsWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostApiPlaylistsMonthlyResponse(rsp)
+	return ParsePostApiPlaylistsResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostApiPlaylistsMonthlyWithResponse(ctx context.Context, params *PostApiPlaylistsMonthlyParams, body PostApiPlaylistsMonthlyJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiPlaylistsMonthlyResponse, error) {
-	rsp, err := c.PostApiPlaylistsMonthly(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PostApiPlaylistsWithResponse(ctx context.Context, params *PostApiPlaylistsParams, body PostApiPlaylistsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiPlaylistsResponse, error) {
+	rsp, err := c.PostApiPlaylists(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostApiPlaylistsMonthlyResponse(rsp)
+	return ParsePostApiPlaylistsResponse(rsp)
 }
 
 // GetApiSpotifyStatusWithResponse request returning *GetApiSpotifyStatusResponse
@@ -1928,15 +2008,15 @@ func ParseGetApiOpenapiYamlResponse(rsp *http.Response) (*GetApiOpenapiYamlRespo
 	return response, nil
 }
 
-// ParsePostApiPlaylistsMonthlyResponse parses an HTTP response from a PostApiPlaylistsMonthlyWithResponse call
-func ParsePostApiPlaylistsMonthlyResponse(rsp *http.Response) (*PostApiPlaylistsMonthlyResponse, error) {
+// ParsePostApiPlaylistsResponse parses an HTTP response from a PostApiPlaylistsWithResponse call
+func ParsePostApiPlaylistsResponse(rsp *http.Response) (*PostApiPlaylistsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostApiPlaylistsMonthlyResponse{
+	response := &PostApiPlaylistsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -1977,12 +2057,12 @@ func ParsePostApiPlaylistsMonthlyResponse(rsp *http.Response) (*PostApiPlaylists
 		}
 		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON422 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest Error
@@ -2109,9 +2189,9 @@ type ServerInterface interface {
 	// Get OpenAPI specification.
 	// (GET /api/openapi.yaml)
 	GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request)
-	// Create a monthly playlist from listening history
-	// (POST /api/playlists/monthly)
-	PostApiPlaylistsMonthly(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsMonthlyParams)
+	// Create a playlist from listening history
+	// (POST /api/playlists)
+	PostApiPlaylists(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsParams)
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request)
@@ -2172,9 +2252,9 @@ func (_ Unimplemented) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Create a monthly playlist from listening history
-// (POST /api/playlists/monthly)
-func (_ Unimplemented) PostApiPlaylistsMonthly(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsMonthlyParams) {
+// Create a playlist from listening history
+// (POST /api/playlists)
+func (_ Unimplemented) PostApiPlaylists(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2486,8 +2566,8 @@ func (siw *ServerInterfaceWrapper) GetApiOpenapiYaml(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// PostApiPlaylistsMonthly operation middleware
-func (siw *ServerInterfaceWrapper) PostApiPlaylistsMonthly(w http.ResponseWriter, r *http.Request) {
+// PostApiPlaylists operation middleware
+func (siw *ServerInterfaceWrapper) PostApiPlaylists(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -2498,7 +2578,7 @@ func (siw *ServerInterfaceWrapper) PostApiPlaylistsMonthly(w http.ResponseWriter
 	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params PostApiPlaylistsMonthlyParams
+	var params PostApiPlaylistsParams
 
 	headers := r.Header
 
@@ -2537,7 +2617,7 @@ func (siw *ServerInterfaceWrapper) PostApiPlaylistsMonthly(w http.ResponseWriter
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostApiPlaylistsMonthly(w, r, params)
+		siw.Handler.PostApiPlaylists(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2753,7 +2833,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/openapi.yaml", wrapper.GetApiOpenapiYaml)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/api/playlists/monthly", wrapper.PostApiPlaylistsMonthly)
+		r.Post(options.BaseURL+"/api/playlists", wrapper.PostApiPlaylists)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/spotify/status", wrapper.GetApiSpotifyStatus)
@@ -3112,72 +3192,72 @@ func (response GetApiOpenapiYaml500JSONResponse) VisitGetApiOpenapiYamlResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthlyRequestObject struct {
-	Params PostApiPlaylistsMonthlyParams
-	Body   *PostApiPlaylistsMonthlyJSONRequestBody
+type PostApiPlaylistsRequestObject struct {
+	Params PostApiPlaylistsParams
+	Body   *PostApiPlaylistsJSONRequestBody
 }
 
-type PostApiPlaylistsMonthlyResponseObject interface {
-	VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error
+type PostApiPlaylistsResponseObject interface {
+	VisitPostApiPlaylistsResponse(w http.ResponseWriter) error
 }
 
-type PostApiPlaylistsMonthly201JSONResponse CreatePlaylistResponse
+type PostApiPlaylists201JSONResponse CreatePlaylistResponse
 
-func (response PostApiPlaylistsMonthly201JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists201JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly400JSONResponse Error
+type PostApiPlaylists400JSONResponse Error
 
-func (response PostApiPlaylistsMonthly400JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists400JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly401JSONResponse Error
+type PostApiPlaylists401JSONResponse Error
 
-func (response PostApiPlaylistsMonthly401JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists401JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly403JSONResponse Error
+type PostApiPlaylists403JSONResponse Error
 
-func (response PostApiPlaylistsMonthly403JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists403JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly404JSONResponse Error
+type PostApiPlaylists404JSONResponse Error
 
-func (response PostApiPlaylistsMonthly404JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists404JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly422JSONResponse Error
+type PostApiPlaylists409JSONResponse Error
 
-func (response PostApiPlaylistsMonthly422JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists409JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(422)
+	w.WriteHeader(409)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostApiPlaylistsMonthly500JSONResponse Error
+type PostApiPlaylists500JSONResponse Error
 
-func (response PostApiPlaylistsMonthly500JSONResponse) VisitPostApiPlaylistsMonthlyResponse(w http.ResponseWriter) error {
+func (response PostApiPlaylists500JSONResponse) VisitPostApiPlaylistsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -3288,9 +3368,9 @@ type StrictServerInterface interface {
 	// Get OpenAPI specification.
 	// (GET /api/openapi.yaml)
 	GetApiOpenapiYaml(ctx context.Context, request GetApiOpenapiYamlRequestObject) (GetApiOpenapiYamlResponseObject, error)
-	// Create a monthly playlist from listening history
-	// (POST /api/playlists/monthly)
-	PostApiPlaylistsMonthly(ctx context.Context, request PostApiPlaylistsMonthlyRequestObject) (PostApiPlaylistsMonthlyResponseObject, error)
+	// Create a playlist from listening history
+	// (POST /api/playlists)
+	PostApiPlaylists(ctx context.Context, request PostApiPlaylistsRequestObject) (PostApiPlaylistsResponseObject, error)
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(ctx context.Context, request GetApiSpotifyStatusRequestObject) (GetApiSpotifyStatusResponseObject, error)
@@ -3563,13 +3643,13 @@ func (sh *strictHandler) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// PostApiPlaylistsMonthly operation middleware
-func (sh *strictHandler) PostApiPlaylistsMonthly(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsMonthlyParams) {
-	var request PostApiPlaylistsMonthlyRequestObject
+// PostApiPlaylists operation middleware
+func (sh *strictHandler) PostApiPlaylists(w http.ResponseWriter, r *http.Request, params PostApiPlaylistsParams) {
+	var request PostApiPlaylistsRequestObject
 
 	request.Params = params
 
-	var body PostApiPlaylistsMonthlyJSONRequestBody
+	var body PostApiPlaylistsJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -3577,18 +3657,18 @@ func (sh *strictHandler) PostApiPlaylistsMonthly(w http.ResponseWriter, r *http.
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostApiPlaylistsMonthly(ctx, request.(PostApiPlaylistsMonthlyRequestObject))
+		return sh.ssi.PostApiPlaylists(ctx, request.(PostApiPlaylistsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostApiPlaylistsMonthly")
+		handler = middleware(handler, "PostApiPlaylists")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostApiPlaylistsMonthlyResponseObject); ok {
-		if err := validResponse.VisitPostApiPlaylistsMonthlyResponse(w); err != nil {
+	} else if validResponse, ok := response.(PostApiPlaylistsResponseObject); ok {
+		if err := validResponse.VisitPostApiPlaylistsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

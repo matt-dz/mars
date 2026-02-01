@@ -15,7 +15,7 @@ type Querier interface {
 	AddPlaylistTrack(ctx context.Context, arg AddPlaylistTrackParams) error
 	AdminExists(ctx context.Context) (bool, error)
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
-	CreateMonthlyPlaylist(ctx context.Context, arg CreateMonthlyPlaylistParams) (uuid.UUID, error)
+	CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) (uuid.UUID, error)
 	CreateServiceAccount(ctx context.Context, arg CreateServiceAccountParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, error)

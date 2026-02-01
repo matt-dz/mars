@@ -17,6 +17,7 @@ type PlaylistType string
 const (
 	PlaylistTypeWeekly  PlaylistType = "weekly"
 	PlaylistTypeMonthly PlaylistType = "monthly"
+	PlaylistTypeCustom  PlaylistType = "custom"
 )
 
 func (e *PlaylistType) Scan(src interface{}) error {

@@ -65,20 +65,21 @@ func (q *Queries) CreateAdminUser(ctx context.Context, arg CreateAdminUserParams
 	return id, err
 }
 
-const createMonthlyPlaylist = `-- name: CreateMonthlyPlaylist :one
+const createPlaylist = `-- name: CreatePlaylist :one
 INSERT INTO playlists (user_id, playlist_type, name)
-  VALUES ($1, 'monthly', $2)
+  VALUES ($1, $2, $3)
 RETURNING
   id
 `
 
-type CreateMonthlyPlaylistParams struct {
-	UserID uuid.UUID
-	Name   string
+type CreatePlaylistParams struct {
+	UserID       uuid.UUID
+	PlaylistType PlaylistType
+	Name         string
 }
 
-func (q *Queries) CreateMonthlyPlaylist(ctx context.Context, arg CreateMonthlyPlaylistParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, createMonthlyPlaylist, arg.UserID, arg.Name)
+func (q *Queries) CreatePlaylist(ctx context.Context, arg CreatePlaylistParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createPlaylist, arg.UserID, arg.PlaylistType, arg.Name)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err

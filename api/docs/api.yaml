@@ -416,14 +416,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/playlists/monthly:
+  /api/playlists:
     post:
-      summary: Create a monthly playlist from listening history
+      summary: Create a playlist from listening history
       tags:
         - Playlists
       description: >
-        Creates a monthly playlist of at most 50 tracks
-        based on the given user's listening history.
+        Creates a playlist of at most 50 tracks
+        based on the given user's listening history
+        within a time frame.
       parameters:
         - $ref: "#/components/parameters/AccessTokenHeader"
         - $ref: "#/components/parameters/CsrfTokenHeader"
@@ -432,7 +433,40 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateMonthlyPlaylistRequest"
+              $ref: "#/components/schemas/DateRangeRequest"
+            examples:
+              weekly:
+                summary: Weekly example
+                value:
+                  user_id: "7d9c7c88-6a8b-4d6b-9b52-7a4df0bb5e31"
+                  start_date:
+                    year: 2026
+                    month: 3
+                    day: 15
+                  type: weekly
+              monthly:
+                summary: Monthly example
+                value:
+                  user_id: "7d9c7c88-6a8b-4d6b-9b52-7a4df0bb5e31"
+                  start_date:
+                    year: 2026
+                    month: 3
+                    day: 1
+                  type: monthly
+
+              custom:
+                summary: Custom example
+                value:
+                  user_id: "7d9c7c88-6a8b-4d6b-9b52-7a4df0bb5e31"
+                  start_date:
+                    year: 2026
+                    month: 3
+                    day: 10
+                  type: custom
+                  end_date:
+                    year: 2026
+                    month: 3
+                    day: 20
       responses:
         "201":
           description: Created Playlist
@@ -464,7 +498,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        "422":
+        "409":
           description: No tracks listened within that month
           content:
             application/json:
@@ -504,35 +538,77 @@ components:
       description: Refresh token
 
   schemas:
-    CreateMonthlyPlaylistRequest:
+    DateParts:
       type: object
+      additionalProperties: false
       properties:
-        user_id:
-          type: string
-          format: uuid
-        month:
-          type: string
-          enum:
-            - january
-            - february
-            - march
-            - april
-            - may
-            - june
-            - july
-            - august
-            - september
-            - october
-            - november
-            - december
         year:
           type: integer
           minimum: 2026
           maximum: 9999
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        day:
+          type: integer
+          minimum: 1
+          maximum: 31
+      required:
+        - year
+        - month
+        - day
+      example:
+        year: 2026
+        month: 3
+        day: 15
+
+    WeeklyOrMonthlyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        start_date:
+          $ref: "#/components/schemas/DateParts"
+        type:
+          type: string
+          enum:
+            - weekly
+            - monthly
       required:
         - user_id
-        - month
-        - year
+        - start_date
+        - type
+
+    CustomRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        start_date:
+          $ref: "#/components/schemas/DateParts"
+        type:
+          type: string
+          enum:
+            - custom
+        end_date:
+          $ref: "#/components/schemas/DateParts"
+      required:
+        - user_id
+        - start_date
+        - type
+        - end_date
+
+    DateRangeRequest:
+      description: >
+        Request with a start date and a type. If type is custom, an end_date is required.
+      oneOf:
+        - $ref: "#/components/schemas/WeeklyOrMonthlyRequest"
+        - $ref: "#/components/schemas/CustomRequest"
 
     CreatePlaylistResponse:
       type: object
@@ -652,6 +728,27 @@ components:
       enum:
         - user
         - admin
+
+    Month:
+      type: string
+      enum:
+        - january
+        - february
+        - march
+        - april
+        - may
+        - june
+        - july
+        - august
+        - september
+        - october
+        - november
+        - december
+
+    Year:
+      type: integer
+      minimum: 2026
+      maximum: 9999
 
   securitySchemes:
     BearerTokenAuth:

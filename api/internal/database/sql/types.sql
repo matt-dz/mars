@@ -3,4 +3,4 @@
 
 CREATE TYPE role AS ENUM ('admin', 'user', 'service');
 
-CREATE TYPE playlist_type AS ENUM ('weekly', 'monthly');
+CREATE TYPE playlist_type AS ENUM ('weekly', 'monthly', 'custom');
