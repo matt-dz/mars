@@ -275,6 +275,7 @@ func (s Server) GetApiPlaylistsId(
 			Artists: t.Artists,
 			Id:      t.ID,
 			Name:    t.Name,
+			Href:    t.Href,
 		}
 		if t.ImageUrl.Valid {
 			res.Tracks[i].ImageUrl = &t.ImageUrl.String

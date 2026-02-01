@@ -620,12 +620,15 @@ components:
           type: array
           items:
             type: string
+        href:
+          type: string
         image_url:
           type: string
       required:
         - id
         - name
         - artists
+        - href
 
     Playlist:
       type: object

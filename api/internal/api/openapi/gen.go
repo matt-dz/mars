@@ -125,6 +125,7 @@ type Playlist struct {
 // PlaylistTrack defines model for PlaylistTrack.
 type PlaylistTrack struct {
 	Artists  []string `json:"artists"`
+	Href     string   `json:"href"`
 	Id       string   `json:"id"`
 	ImageUrl *string  `json:"image_url,omitempty"`
 	Name     string   `json:"name"`
@@ -713,6 +714,7 @@ func NewPostApiAuthRefreshRequestWithBody(server string, params *PostApiAuthRefr
 	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
+
 		if params.XCSRFToken != nil {
 			var headerParam0 string
 
@@ -723,9 +725,11 @@ func NewPostApiAuthRefreshRequestWithBody(server string, params *PostApiAuthRefr
 
 			req.Header.Set("X-CSRF-Token", headerParam0)
 		}
+
 	}
 
 	if params != nil {
+
 		if params.Refresh != nil {
 			var cookieParam0 string
 
@@ -767,6 +771,7 @@ func NewGetApiAuthVerifyRequest(server string, params *GetApiAuthVerifyParams) (
 		queryValues := queryURL.Query()
 
 		if params.Role != nil {
+
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "role", runtime.ParamLocationQuery, *params.Role); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
@@ -778,6 +783,7 @@ func NewGetApiAuthVerifyRequest(server string, params *GetApiAuthVerifyParams) (
 					}
 				}
 			}
+
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
@@ -789,6 +795,7 @@ func NewGetApiAuthVerifyRequest(server string, params *GetApiAuthVerifyParams) (
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -872,6 +879,7 @@ func NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody(server string, param
 	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
+
 		if params.XCSRFToken != nil {
 			var headerParam0 string
 
@@ -882,9 +890,11 @@ func NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody(server string, param
 
 			req.Header.Set("X-CSRF-Token", headerParam0)
 		}
+
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -968,6 +978,7 @@ func NewGetApiMePlaylistsRequest(server string, params *GetApiMePlaylistsParams)
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -1064,6 +1075,7 @@ func NewPostApiOauthSpotifyTokenRefreshRequestWithBody(server string, params *Po
 	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
+
 		if params.XCSRFToken != nil {
 			var headerParam0 string
 
@@ -1074,9 +1086,11 @@ func NewPostApiOauthSpotifyTokenRefreshRequestWithBody(server string, params *Po
 
 			req.Header.Set("X-CSRF-Token", headerParam0)
 		}
+
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -1160,6 +1174,7 @@ func NewPostApiPlaylistsRequestWithBody(server string, params *PostApiPlaylistsP
 	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
+
 		if params.XCSRFToken != nil {
 			var headerParam0 string
 
@@ -1170,9 +1185,11 @@ func NewPostApiPlaylistsRequestWithBody(server string, params *PostApiPlaylistsP
 
 			req.Header.Set("X-CSRF-Token", headerParam0)
 		}
+
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -1223,6 +1240,7 @@ func NewGetApiPlaylistsIdRequest(server string, id openapi_types.UUID, params *G
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -1291,6 +1309,7 @@ func NewGetApiUsersRequest(server string, params *GetApiUsersParams) (*http.Requ
 		queryValues := queryURL.Query()
 
 		if params.Limit != nil {
+
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
@@ -1302,6 +1321,7 @@ func NewGetApiUsersRequest(server string, params *GetApiUsersParams) (*http.Requ
 					}
 				}
 			}
+
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
@@ -1313,6 +1333,7 @@ func NewGetApiUsersRequest(server string, params *GetApiUsersParams) (*http.Requ
 	}
 
 	if params != nil {
+
 		if params.Access != nil {
 			var cookieParam0 string
 
@@ -2009,6 +2030,7 @@ func ParseGetApiHealthResponse(rsp *http.Response) (*GetApiHealthResponse, error
 			return nil, err
 		}
 		response.JSON500 = &dest
+
 	}
 
 	return response, nil
@@ -2606,6 +2628,7 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 // PostApiAuthRefresh operation middleware
 func (siw *ServerInterfaceWrapper) PostApiAuthRefresh(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
@@ -2660,6 +2683,7 @@ func (siw *ServerInterfaceWrapper) PostApiAuthRefresh(w http.ResponseWriter, r *
 
 // GetApiAuthVerify operation middleware
 func (siw *ServerInterfaceWrapper) GetApiAuthVerify(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -2707,6 +2731,7 @@ func (siw *ServerInterfaceWrapper) GetApiAuthVerify(w http.ResponseWriter, r *ht
 
 // GetApiHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetApiHealth(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApiHealth(w, r)
 	}))
@@ -2720,6 +2745,7 @@ func (siw *ServerInterfaceWrapper) GetApiHealth(w http.ResponseWriter, r *http.R
 
 // PostApiIntegrationsSpotifyTracksSync operation middleware
 func (siw *ServerInterfaceWrapper) PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -2780,6 +2806,7 @@ func (siw *ServerInterfaceWrapper) PostApiIntegrationsSpotifyTracksSync(w http.R
 
 // PostApiLogin operation middleware
 func (siw *ServerInterfaceWrapper) PostApiLogin(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostApiLogin(w, r)
 	}))
@@ -2793,6 +2820,7 @@ func (siw *ServerInterfaceWrapper) PostApiLogin(w http.ResponseWriter, r *http.R
 
 // GetApiMePlaylists operation middleware
 func (siw *ServerInterfaceWrapper) GetApiMePlaylists(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -2832,6 +2860,7 @@ func (siw *ServerInterfaceWrapper) GetApiMePlaylists(w http.ResponseWriter, r *h
 
 // PostApiOauthSpotifyToken operation middleware
 func (siw *ServerInterfaceWrapper) PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request) {
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
@@ -2851,6 +2880,7 @@ func (siw *ServerInterfaceWrapper) PostApiOauthSpotifyToken(w http.ResponseWrite
 
 // PostApiOauthSpotifyTokenRefresh operation middleware
 func (siw *ServerInterfaceWrapper) PostApiOauthSpotifyTokenRefresh(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -2911,6 +2941,7 @@ func (siw *ServerInterfaceWrapper) PostApiOauthSpotifyTokenRefresh(w http.Respon
 
 // GetApiOpenapiYaml operation middleware
 func (siw *ServerInterfaceWrapper) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApiOpenapiYaml(w, r)
 	}))
@@ -2924,6 +2955,7 @@ func (siw *ServerInterfaceWrapper) GetApiOpenapiYaml(w http.ResponseWriter, r *h
 
 // PostApiPlaylists operation middleware
 func (siw *ServerInterfaceWrapper) PostApiPlaylists(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -2984,6 +3016,7 @@ func (siw *ServerInterfaceWrapper) PostApiPlaylists(w http.ResponseWriter, r *ht
 
 // GetApiPlaylistsId operation middleware
 func (siw *ServerInterfaceWrapper) GetApiPlaylistsId(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	// ------------- Path parameter "id" -------------
@@ -3032,6 +3065,7 @@ func (siw *ServerInterfaceWrapper) GetApiPlaylistsId(w http.ResponseWriter, r *h
 
 // GetApiSpotifyStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request) {
+
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
@@ -3051,6 +3085,7 @@ func (siw *ServerInterfaceWrapper) GetApiSpotifyStatus(w http.ResponseWriter, r 
 
 // GetApiUsers operation middleware
 func (siw *ServerInterfaceWrapper) GetApiUsers(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 
 	ctx := r.Context()
@@ -3304,7 +3339,8 @@ type GetApiAuthVerifyResponseObject interface {
 	VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error
 }
 
-type GetApiAuthVerify204Response struct{}
+type GetApiAuthVerify204Response struct {
+}
 
 func (response GetApiAuthVerify204Response) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
@@ -3338,13 +3374,15 @@ func (response GetApiAuthVerify500JSONResponse) VisitGetApiAuthVerifyResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetApiHealthRequestObject struct{}
+type GetApiHealthRequestObject struct {
+}
 
 type GetApiHealthResponseObject interface {
 	VisitGetApiHealthResponse(w http.ResponseWriter) error
 }
 
-type GetApiHealth204Response struct{}
+type GetApiHealth204Response struct {
+}
 
 func (response GetApiHealth204Response) VisitGetApiHealthResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
@@ -3369,7 +3407,8 @@ type PostApiIntegrationsSpotifyTracksSyncResponseObject interface {
 	VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error
 }
 
-type PostApiIntegrationsSpotifyTracksSync204Response struct{}
+type PostApiIntegrationsSpotifyTracksSync204Response struct {
+}
 
 func (response PostApiIntegrationsSpotifyTracksSync204Response) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
@@ -3507,7 +3546,8 @@ type PostApiOauthSpotifyTokenResponseObject interface {
 	VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error
 }
 
-type PostApiOauthSpotifyToken204Response struct{}
+type PostApiOauthSpotifyToken204Response struct {
+}
 
 func (response PostApiOauthSpotifyToken204Response) VisitPostApiOauthSpotifyTokenResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
@@ -3541,7 +3581,8 @@ type PostApiOauthSpotifyTokenRefreshResponseObject interface {
 	VisitPostApiOauthSpotifyTokenRefreshResponse(w http.ResponseWriter) error
 }
 
-type PostApiOauthSpotifyTokenRefresh204Response struct{}
+type PostApiOauthSpotifyTokenRefresh204Response struct {
+}
 
 func (response PostApiOauthSpotifyTokenRefresh204Response) VisitPostApiOauthSpotifyTokenRefreshResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
@@ -3593,7 +3634,8 @@ func (response PostApiOauthSpotifyTokenRefresh500JSONResponse) VisitPostApiOauth
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetApiOpenapiYamlRequestObject struct{}
+type GetApiOpenapiYamlRequestObject struct {
+}
 
 type GetApiOpenapiYamlResponseObject interface {
 	VisitGetApiOpenapiYamlResponse(w http.ResponseWriter) error
@@ -3744,7 +3786,8 @@ func (response GetApiPlaylistsId500JSONResponse) VisitGetApiPlaylistsIdResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetApiSpotifyStatusRequestObject struct{}
+type GetApiSpotifyStatusRequestObject struct {
+}
 
 type GetApiSpotifyStatusResponseObject interface {
 	VisitGetApiSpotifyStatusResponse(w http.ResponseWriter) error
@@ -3864,10 +3907,8 @@ type StrictServerInterface interface {
 	GetApiUsers(ctx context.Context, request GetApiUsersRequestObject) (GetApiUsersResponseObject, error)
 }
 
-type (
-	StrictHandlerFunc    = strictnethttp.StrictHTTPHandlerFunc
-	StrictMiddlewareFunc = strictnethttp.StrictHTTPMiddlewareFunc
-)
+type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
+type StrictMiddlewareFunc = strictnethttp.StrictHTTPMiddlewareFunc
 
 type StrictHTTPServerOptions struct {
 	RequestErrorHandlerFunc  func(w http.ResponseWriter, r *http.Request, err error)
