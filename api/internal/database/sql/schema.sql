@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   name text NOT NULL,
   artists text[] NOT NULL,
   href text NOT NULL,
+  uri text NOT NULL,
   image_url text,
   created_at timestamptz NOT NULL DEFAULT NOW(),
   updated_at timestamptz NOT NULL DEFAULT now()

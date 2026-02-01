@@ -161,8 +161,8 @@ ORDER BY
 LIMIT $1;
 
 -- name: UpsertTrack :exec
-INSERT INTO tracks (image_url, id, name, artists, href)
-  VALUES (sqlc.narg ('image_url'), $1, $2, $3, $4)
+INSERT INTO tracks (image_url, id, name, artists, href, uri)
+  VALUES (sqlc.narg ('image_url'), $1, $2, $3, $4, $5)
 ON CONFLICT (id)
   DO UPDATE SET
     updated_at = NOW(),

@@ -126,6 +126,7 @@ type Track struct {
 	Name      string
 	Artists   []string
 	Href      string
+	Uri       string
 	ImageUrl  pgtype.Text
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz

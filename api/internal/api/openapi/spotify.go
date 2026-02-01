@@ -98,6 +98,7 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 				ExternalUrls struct {
 					Spotify string `json:"spotify"`
 				} `json:"external_urls"`
+				URI string `json:"uri"`
 			} `json:"track"`
 			PlayedAt time.Time `json:"played_at"`
 		} `json:"items"`
@@ -134,6 +135,7 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 				String: imageURL,
 				Valid:  imageURL != "",
 			},
+			Uri: item.Track.URI,
 		})
 		if err != nil {
 			s.Env.Logger.ErrorContext(ctx, "failed to upsert track",

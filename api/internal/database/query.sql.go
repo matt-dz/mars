@@ -586,8 +586,8 @@ func (q *Queries) UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpo
 }
 
 const upsertTrack = `-- name: UpsertTrack :exec
-INSERT INTO tracks (image_url, id, name, artists, href)
-  VALUES ($5, $1, $2, $3, $4)
+INSERT INTO tracks (image_url, id, name, artists, href, uri)
+  VALUES ($6, $1, $2, $3, $4, $5)
 ON CONFLICT (id)
   DO UPDATE SET
     updated_at = NOW(),
@@ -602,6 +602,7 @@ type UpsertTrackParams struct {
 	Name     string
 	Artists  []string
 	Href     string
+	Uri      string
 	ImageUrl pgtype.Text
 }
 
@@ -611,6 +612,7 @@ func (q *Queries) UpsertTrack(ctx context.Context, arg UpsertTrackParams) error 
 		arg.Name,
 		arg.Artists,
 		arg.Href,
+		arg.Uri,
 		arg.ImageUrl,
 	)
 	return err

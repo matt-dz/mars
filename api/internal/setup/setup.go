@@ -40,7 +40,7 @@ func AppSecret(env *env.Env) error {
 
 		// Write file
 		err = os.Mkdir("/data", dataDirectoryPerms)
-		if err != nil {
+		if err != nil && !errors.Is(err, os.ErrExist) {
 			return fmt.Errorf("creating data directory: %w", err)
 		}
 		err = os.WriteFile(secretPath, []byte(secret), appSecretFilePerms)

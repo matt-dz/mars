@@ -19,7 +19,7 @@ const (
 	defaultServiceEmail    = "service@mars.com"
 	serviceSecretPath      = "/data/service_credentials"
 	serviceSecretFilePerms = 0o600
-	servicePasswordBytes   = 32
+	servicePasswordBytes   = 64
 )
 
 var ErrPartialCredentials = errors.New(
@@ -47,49 +47,56 @@ func LoadOrCreateCredentials(logger *slog.Logger) (email, password string, err e
 		return "", "", ErrPartialCredentials
 	}
 
-	// Try to load from secret file
-	if data, err := os.ReadFile(serviceSecretPath); err == nil {
+	const dataDirectoryPerms = 0o755
+
+	if f1, err := os.Lstat(serviceSecretPath); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", "", fmt.Errorf("checking secret path: %w", err)
+		}
+
+		email = defaultServiceEmail
+		passwordBytes := make([]byte, servicePasswordBytes)
+		if _, err := rand.Read(passwordBytes); err != nil {
+			return "", "", fmt.Errorf("generating service account password: %w", err)
+		}
+		password = base64.StdEncoding.EncodeToString(passwordBytes)
+
+		// Save to secret file
+		creds := serviceCredentials{
+			Email:    email,
+			Password: password,
+		}
+		data, err := json.Marshal(creds)
+		if err != nil {
+			return "", "", fmt.Errorf("marshaling service credentials: %w", err)
+		}
+
+		err = os.Mkdir("/data", dataDirectoryPerms)
+		if err != nil && !errors.Is(err, os.ErrExist) {
+			return "", "", fmt.Errorf("making data directory: %w", err)
+		}
+
+		err = os.WriteFile(serviceSecretPath, data, serviceSecretFilePerms)
+		if err != nil {
+			return "", "", fmt.Errorf("writing service credentials file: %w", err)
+		}
+	} else {
+		if f1.IsDir() {
+			return "", "", fmt.Errorf("expected file, got directory at %q", serviceSecretPath)
+		}
 		var creds serviceCredentials
-		if err := json.Unmarshal(data, &creds); err != nil {
-			return "", "", fmt.Errorf("parsing service credentials file: %w", err)
+		data, err := os.ReadFile(serviceSecretPath)
+		if err != nil {
+			return "", "", fmt.Errorf("reading file: %w", err)
 		}
-		logger.Info("using service account credentials from secret file")
-		// Set as environment variables for use by other components
-		if err = os.Setenv("SERVICE_EMAIL", creds.Email); err != nil {
-			return "", "", fmt.Errorf("setting SERVICE_EMAIL: %w", err)
+		err = json.Unmarshal(data, &creds)
+		if err != nil {
+			return "", "", fmt.Errorf("unmarshaling data: %w", err)
 		}
-		if err = os.Setenv("SERVICE_PASSWORD", creds.Password); err != nil {
-			return "", "", fmt.Errorf("setting SERVICE_PASSWORD: %w", err)
-		}
-		return creds.Email, creds.Password, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return "", "", fmt.Errorf("reading service credentials file: %w", err)
+		email = creds.Email
+		password = creds.Password
 	}
 
-	// Generate new credentials
-	logger.Info("generating new service account credentials")
-	email = defaultServiceEmail
-
-	passwordBytes := make([]byte, servicePasswordBytes)
-	if _, err := rand.Read(passwordBytes); err != nil {
-		return "", "", fmt.Errorf("generating service account password: %w", err)
-	}
-	password = base64.URLEncoding.EncodeToString(passwordBytes)
-
-	// Save to secret file
-	creds := serviceCredentials{
-		Email:    email,
-		Password: password,
-	}
-	data, err := json.Marshal(creds)
-	if err != nil {
-		return "", "", fmt.Errorf("marshaling service credentials: %w", err)
-	}
-	if err := os.WriteFile(serviceSecretPath, data, serviceSecretFilePerms); err != nil {
-		return "", "", fmt.Errorf("writing service credentials file: %w", err)
-	}
-
-	// Set as environment variables for use by other components
 	if err = os.Setenv("SERVICE_EMAIL", email); err != nil {
 		return "", "", fmt.Errorf("setting SERVICE_EMAIL: %w", err)
 	}
@@ -97,7 +104,6 @@ func LoadOrCreateCredentials(logger *slog.Logger) (email, password string, err e
 		return "", "", fmt.Errorf("setting SERVICE_PASSWORD: %w", err)
 	}
 
-	logger.Info("service account credentials saved to secret file")
 	return email, password, nil
 }
 
