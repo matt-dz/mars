@@ -119,3 +119,36 @@ func RefreshSpotifyTokens(ctx context.Context, client marshttp.Client, email, pa
 
 	return errors.Join(errs...)
 }
+
+func SyncSpotifyTracks(ctx context.Context, client marshttp.Client, email, password string) error {
+	accessToken, _, csrfToken, err := Login(ctx, client, email, password)
+	if err != nil {
+		return fmt.Errorf("logging in: %w", err)
+	}
+
+	userids, err := ListUsers(ctx, client, accessToken)
+	if err != nil {
+		return fmt.Errorf("listing users: %w", err)
+	}
+
+	var wg sync.WaitGroup
+	var mtx sync.Mutex
+	var errs []error
+	for _, id := range userids {
+		wg.Go(func() {
+			err := spotify.SyncTracks(ctx, client, id, accessToken, csrfToken)
+			if err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("syncing tracks for user (%s): %w", id, err))
+				mtx.Unlock()
+			}
+		})
+	}
+	wg.Wait()
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errors.Join(errs...)
+}

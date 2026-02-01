@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	defaultPort            uint16 = 8080
-	spotifyRefreshInterval        = 30 * time.Minute
+	defaultPort              uint16 = 8080
+	spotifyRefreshInterval          = 30 * time.Minute
+	spotifyTrackSyncInterval        = 10 * time.Minute
 )
 
 func main() {
@@ -87,6 +88,9 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	// Start Spotify token refresh goroutine using service account
 	go runSpotifyTokenRefresh(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
 
+	// Start Spotify track sync goroutine using service account
+	go runSpotifyTrackSync(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
+
 	return api.Start(ctx, port, e)
 }
 
@@ -101,10 +105,32 @@ func runSpotifyTokenRefresh(ctx context.Context, logger *slog.Logger, client mar
 			logger.Info("stopping spotify token refresh goroutine")
 			return
 		case <-ticker.C:
+			logger.Info("refreshing spotify tokens")
 			if err := mars.RefreshSpotifyTokens(ctx, client, email, password); err != nil {
 				logger.Error("failed to refresh spotify tokens", "error", err)
 			} else {
 				logger.Info("refreshed spotify tokens")
+			}
+		}
+	}
+}
+
+// runSpotifyTrackSync waits a specified interval before syncing spotify tracks for all users.
+func runSpotifyTrackSync(ctx context.Context, logger *slog.Logger, client marshttp.Client, email, password string) {
+	ticker := time.NewTicker(spotifyTrackSyncInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("stopping spotify track sync goroutine")
+			return
+		case <-ticker.C:
+			logger.Info("syncing spotify tracks")
+			if err := mars.SyncSpotifyTracks(ctx, client, email, password); err != nil {
+				logger.Error("failed to sync spotify tracks", "error", err)
+			} else {
+				logger.Info("synced spotify tracks")
 			}
 		}
 	}
