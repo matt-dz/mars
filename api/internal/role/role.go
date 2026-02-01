@@ -3,6 +3,8 @@ package role
 
 import (
 	"math"
+
+	"mars/internal/database"
 )
 
 type Role int
@@ -30,6 +32,17 @@ func ToRole(role string) Role {
 		return RoleAdmin
 	case "user":
 		return RoleUser
+	default:
+		return RoleUnknown
+	}
+}
+
+func DBToRole(role database.Role) Role {
+	switch role {
+	case database.RoleUser:
+		return RoleUser
+	case database.RoleAdmin:
+		return RoleAdmin
 	default:
 		return RoleUnknown
 	}

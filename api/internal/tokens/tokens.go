@@ -85,14 +85,14 @@ func CreateCSRFToken() (token string, err error) {
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-func CreateUserAccessToken(env *env.Env, userid uuid.UUID) (token string, err error) {
+func CreateAccessToken(env *env.Env, userid uuid.UUID, role role.Role) (token string, err error) {
 	secret := env.Get("APP_SECRET")
 	if secret == "" {
 		return "", errors.New("APP_SECRET not set")
 	}
 
 	jwt, err := marsjwt.GenerateJWT(marsjwt.JWTParams{
-		Role:   role.RoleUser,
+		Role:   role,
 		UserID: userid.String(),
 	}, []byte(secret), "1", AccessTokenDuration())
 	if err != nil {

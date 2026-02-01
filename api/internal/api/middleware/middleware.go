@@ -139,6 +139,7 @@ func (m Middleware) OAPIErrorHandler(
 }
 
 func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+	adminRoutes := []string{"/api/oauth/spotify/token/refresh", "/api/users"}
 	reqid := requestid.FromContext(ctx)
 
 	if input.SecuritySchemeName == "" {
@@ -248,7 +249,7 @@ func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.Auth
 	// Authorize user
 	roleClaim := jwtAccess.Claims.(jwt.MapClaims)["role"].(string)
 	userRole := role.ToRole(roleClaim)
-	if input.RequestValidationInput.Request.URL.Path == "/api/oauth/spotify/token/refresh" && userRole != role.RoleAdmin {
+	if slices.Contains(adminRoutes, input.RequestValidationInput.Request.URL.Path) && userRole != role.RoleAdmin {
 		return &apierror.Error{
 			Code:    apierror.InsufficientPermissions,
 			Status:  apierror.InsufficientPermissions.Status(),

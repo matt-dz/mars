@@ -5,14 +5,101 @@
 package database
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type PlaylistType string
+
+const (
+	PlaylistTypeWeekly  PlaylistType = "weekly"
+	PlaylistTypeMonthly PlaylistType = "monthly"
+)
+
+func (e *PlaylistType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PlaylistType(s)
+	case string:
+		*e = PlaylistType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PlaylistType: %T", src)
+	}
+	return nil
+}
+
+type NullPlaylistType struct {
+	PlaylistType PlaylistType
+	Valid        bool // Valid is true if PlaylistType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPlaylistType) Scan(value interface{}) error {
+	if value == nil {
+		ns.PlaylistType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PlaylistType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPlaylistType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PlaylistType), nil
+}
+
+type Role string
+
+const (
+	RoleAdmin Role = "admin"
+	RoleUser  Role = "user"
+)
+
+func (e *Role) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Role(s)
+	case string:
+		*e = Role(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Role: %T", src)
+	}
+	return nil
+}
+
+type NullRole struct {
+	Role  Role
+	Valid bool // Valid is true if Role is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.Role, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Role.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Role), nil
+}
+
 type Playlist struct {
 	ID           uuid.UUID
 	UserID       uuid.UUID
-	PlaylistType interface{}
+	PlaylistType PlaylistType
 	Name         string
 	Timestamp    pgtype.Timestamptz
 	CreatedAt    pgtype.Timestamptz
@@ -53,7 +140,7 @@ type TrackListen struct {
 type User struct {
 	ID                    uuid.UUID
 	Email                 string
-	Role                  interface{}
+	Role                  Role
 	PasswordHash          string
 	SpotifyID             pgtype.Text
 	RefreshTokenHash      pgtype.Text

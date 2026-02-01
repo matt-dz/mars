@@ -13,6 +13,7 @@ import (
 	"mars/internal/api/requestid"
 	"mars/internal/argon2id"
 	"mars/internal/database"
+	"mars/internal/role"
 	"mars/internal/tokens"
 
 	"github.com/jackc/pgx/v5"
@@ -167,7 +168,7 @@ func (s Server) PostApiLogin(ctx context.Context, request PostApiLoginRequestObj
 	}
 
 	// Create access token
-	access, err := tokens.CreateUserAccessToken(s.Env, user.ID)
+	access, err := tokens.CreateAccessToken(s.Env, user.ID, role.DBToRole(user.Role))
 	if err != nil {
 		s.Env.Logger.ErrorContext(ctx, "failed to create user access token", slog.Any("error", err))
 		return PostApiLogin500JSONResponse{
@@ -288,6 +289,19 @@ func (s Server) PostApiAuthRefresh(ctx context.Context, request PostApiAuthRefre
 		}, nil
 	}
 
+	// Get user role
+	s.Env.Logger.DebugContext(ctx, "getting user role")
+	userrole, err := s.Env.Database.GetUserRole(ctx, userid)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get user role", slog.Any("error", err))
+		return PostApiAuthRefresh500JSONResponse{
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			Message: "internal server error",
+			ErrorId: reqid,
+		}, nil
+	}
+
 	// Create new token
 	s.Env.Logger.DebugContext(ctx, "creating new tokens")
 	newToken, err := tokens.CreateRefreshToken(userid)
@@ -342,7 +356,7 @@ func (s Server) PostApiAuthRefresh(ctx context.Context, request PostApiAuthRefre
 		}, nil
 	}
 
-	access, err := tokens.CreateUserAccessToken(s.Env, userid)
+	access, err := tokens.CreateAccessToken(s.Env, userid, role.DBToRole(userrole))
 	if err != nil {
 		s.Env.Logger.ErrorContext(ctx, "failed to create user access token", slog.Any("error", err))
 		return PostApiAuthRefresh500JSONResponse{

@@ -53,6 +53,7 @@ const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
   id,
   email,
+  ROLE,
   password_hash
 FROM
   users
@@ -63,14 +64,50 @@ WHERE
 type GetUserByEmailRow struct {
 	ID           uuid.UUID
 	Email        string
+	Role         Role
 	PasswordHash string
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i GetUserByEmailRow
-	err := row.Scan(&i.ID, &i.Email, &i.PasswordHash)
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Role,
+		&i.PasswordHash,
+	)
 	return i, err
+}
+
+const getUserIDs = `-- name: GetUserIDs :many
+SELECT
+  id
+FROM
+  users
+ORDER BY
+  created_at ASC
+LIMIT $1
+`
+
+func (q *Queries) GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getUserIDs, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserRefreshToken = `-- name: GetUserRefreshToken :one
@@ -93,6 +130,22 @@ func (q *Queries) GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUse
 	var i GetUserRefreshTokenRow
 	err := row.Scan(&i.RefreshTokenHash, &i.RefreshTokenExpiresAt)
 	return i, err
+}
+
+const getUserRole = `-- name: GetUserRole :one
+SELECT
+  ROLE
+FROM
+  users
+WHERE
+  id = $1
+`
+
+func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (Role, error) {
+	row := q.db.QueryRow(ctx, getUserRole, id)
+	var role Role
+	err := row.Scan(&role)
+	return role, err
 }
 
 const getUserSpotifyId = `-- name: GetUserSpotifyId :one

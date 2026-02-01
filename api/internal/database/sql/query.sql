@@ -22,11 +22,20 @@ RETURNING
 SELECT
   id,
   email,
+  ROLE,
   password_hash
 FROM
   users
 WHERE
   email = trim(lower(@email::text));
+
+-- name: GetUserRole :one
+SELECT
+  ROLE
+FROM
+  users
+WHERE
+  id = $1;
 
 -- name: UpdateUserRefreshToken :exec
 UPDATE
@@ -106,3 +115,12 @@ SET
   expires_at = $5
 WHERE
   spotify_user_id = $6;
+
+-- name: GetUserIDs :many
+SELECT
+  id
+FROM
+  users
+ORDER BY
+  created_at ASC
+LIMIT $1;

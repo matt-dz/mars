@@ -39,6 +39,11 @@ type Error struct {
 	Status  int    `json:"status"`
 }
 
+// ListUsersResponse defines model for ListUsersResponse.
+type ListUsersResponse struct {
+	Ids *[]openapi_types.UUID `json:"ids,omitempty"`
+}
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	Email    openapi_types.Email `json:"email"`
@@ -109,6 +114,14 @@ type GetApiAuthVerifyParams struct {
 type PostApiOauthSpotifyTokenRefreshParams struct {
 	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
 	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
+
+	// Access Access token
+	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
+}
+
+// GetApiUsersParams defines parameters for GetApiUsers.
+type GetApiUsersParams struct {
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// Access Access token
 	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
@@ -230,6 +243,9 @@ type ClientInterface interface {
 
 	// GetApiSpotifyStatus request
 	GetApiSpotifyStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiUsers request
+	GetApiUsers(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) PostApiAuthRefreshWithBody(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -366,6 +382,18 @@ func (c *Client) GetApiOpenapiYaml(ctx context.Context, reqEditors ...RequestEdi
 
 func (c *Client) GetApiSpotifyStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiSpotifyStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiUsers(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiUsersRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -747,6 +775,72 @@ func NewGetApiSpotifyStatusRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetApiUsersRequest generates requests for GetApiUsers
+func NewGetApiUsersRequest(server string, params *GetApiUsersParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -821,6 +915,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetApiSpotifyStatusWithResponse request
 	GetApiSpotifyStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiSpotifyStatusResponse, error)
+
+	// GetApiUsersWithResponse request
+	GetApiUsersWithResponse(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*GetApiUsersResponse, error)
 }
 
 type PostApiAuthRefreshResponse struct {
@@ -1012,6 +1109,32 @@ func (r GetApiSpotifyStatusResponse) StatusCode() int {
 	return 0
 }
 
+type GetApiUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ListUsersResponse
+	JSON400      *Error
+	JSON401      *Error
+	JSON403      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // PostApiAuthRefreshWithBodyWithResponse request with arbitrary body returning *PostApiAuthRefreshResponse
 func (c *ClientWithResponses) PostApiAuthRefreshWithBodyWithResponse(ctx context.Context, params *PostApiAuthRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiAuthRefreshResponse, error) {
 	rsp, err := c.PostApiAuthRefreshWithBody(ctx, params, contentType, body, reqEditors...)
@@ -1114,6 +1237,15 @@ func (c *ClientWithResponses) GetApiSpotifyStatusWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseGetApiSpotifyStatusResponse(rsp)
+}
+
+// GetApiUsersWithResponse request returning *GetApiUsersResponse
+func (c *ClientWithResponses) GetApiUsersWithResponse(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*GetApiUsersResponse, error) {
+	rsp, err := c.GetApiUsers(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiUsersResponse(rsp)
 }
 
 // ParsePostApiAuthRefreshResponse parses an HTTP response from a PostApiAuthRefreshWithResponse call
@@ -1415,6 +1547,60 @@ func ParseGetApiSpotifyStatusResponse(rsp *http.Response) (*GetApiSpotifyStatusR
 	return response, nil
 }
 
+// ParseGetApiUsersResponse parses an HTTP response from a GetApiUsersWithResponse call
+func ParseGetApiUsersResponse(rsp *http.Response) (*GetApiUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListUsersResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Refresh session tokens
@@ -1441,6 +1627,9 @@ type ServerInterface interface {
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request)
+	// List users
+	// (GET /api/users)
+	GetApiUsers(w http.ResponseWriter, r *http.Request, params GetApiUsersParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -1492,6 +1681,12 @@ func (_ Unimplemented) GetApiOpenapiYaml(w http.ResponseWriter, r *http.Request)
 // Get Spotify OAuth2.0 status.
 // (GET /api/spotify/status)
 func (_ Unimplemented) GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List users
+// (GET /api/users)
+func (_ Unimplemented) GetApiUsers(w http.ResponseWriter, r *http.Request, params GetApiUsersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1750,6 +1945,54 @@ func (siw *ServerInterfaceWrapper) GetApiSpotifyStatus(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// GetApiUsers operation middleware
+func (siw *ServerInterfaceWrapper) GetApiUsers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetApiUsersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value AccessTokenHeader
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApiUsers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1886,6 +2129,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/spotify/status", wrapper.GetApiSpotifyStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/users", wrapper.GetApiUsers)
 	})
 
 	return r
@@ -2201,6 +2447,59 @@ func (response GetApiSpotifyStatus500JSONResponse) VisitGetApiSpotifyStatusRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetApiUsersRequestObject struct {
+	Params GetApiUsersParams
+}
+
+type GetApiUsersResponseObject interface {
+	VisitGetApiUsersResponse(w http.ResponseWriter) error
+}
+
+type GetApiUsers200JSONResponse ListUsersResponse
+
+func (response GetApiUsers200JSONResponse) VisitGetApiUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiUsers400JSONResponse Error
+
+func (response GetApiUsers400JSONResponse) VisitGetApiUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiUsers401JSONResponse Error
+
+func (response GetApiUsers401JSONResponse) VisitGetApiUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiUsers403JSONResponse Error
+
+func (response GetApiUsers403JSONResponse) VisitGetApiUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiUsers500JSONResponse Error
+
+func (response GetApiUsers500JSONResponse) VisitGetApiUsersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Refresh session tokens
@@ -2227,6 +2526,9 @@ type StrictServerInterface interface {
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(ctx context.Context, request GetApiSpotifyStatusRequestObject) (GetApiSpotifyStatusResponseObject, error)
+	// List users
+	// (GET /api/users)
+	GetApiUsers(ctx context.Context, request GetApiUsersRequestObject) (GetApiUsersResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -2477,6 +2779,32 @@ func (sh *strictHandler) GetApiSpotifyStatus(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetApiSpotifyStatusResponseObject); ok {
 		if err := validResponse.VisitGetApiSpotifyStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetApiUsers operation middleware
+func (sh *strictHandler) GetApiUsers(w http.ResponseWriter, r *http.Request, params GetApiUsersParams) {
+	var request GetApiUsersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiUsers(ctx, request.(GetApiUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetApiUsersResponseObject); ok {
+		if err := validResponse.VisitGetApiUsersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
