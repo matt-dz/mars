@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params, fetch, cookies }) => {
 		const playlist = await getPlaylist(params.id, fetchFn);
 		return { playlist };
 	} catch (e) {
-		console.error('[playlist] Fetching integration statuses failed:', e);
+		console.error('[playlist] Fetching playlists failed:', e);
 		if (e instanceof HTTPError) {
 			if (e.statusCode === 401) {
 				console.debug('[playlist] redirecting user to login');

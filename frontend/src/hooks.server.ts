@@ -38,16 +38,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 			)
 		);
 		console.debug('[hooks] Session verified');
-	} catch (e) {
-		console.debug('[hooks] Session verification failed:', e);
-		if (!(e instanceof HTTPError)) {
-			throw e;
+	} catch (e1) {
+		console.debug('[hooks] Session verification failed:', e1);
+		if (!(e1 instanceof HTTPError)) {
+			throw e1;
 		}
-		if (isUnrecoverableAuthError(e.errorCode)) {
+		if (isUnrecoverableAuthError(e1.errorCode)) {
 			console.debug('[hooks] Received an unrecoverable auth error, redirecting to login');
 			redirect(302, '/login');
 		}
-		if (!isRecoverableAuthError(e.errorCode)) {
+		if (!isRecoverableAuthError(e1.errorCode)) {
 			console.debug('[hooks] Received an non-recoverable error, redirecting to login');
 			redirect(302, '/login');
 		}
@@ -64,14 +64,21 @@ export const handle: Handle = async ({ event, resolve }) => {
 			);
 
 			// Patch cookies
-			console.debug(
-				'[hooks] Successfully refreshed session, patching cookies:',
-				res.headers.getSetCookie()
-			);
+			console.debug('[hooks] Successfully refreshed session, patching cookies');
 			patchCookies(res, event.cookies);
 		} catch (e2) {
-			console.debug('[hooks] Session refresh failed:', e);
-			throw e2;
+			console.debug('[hooks] Session refresh failed:', e2);
+			if (!(e2 instanceof HTTPError)) {
+				throw e2;
+			}
+			if (isUnrecoverableAuthError(e2.errorCode)) {
+				console.debug('[hooks] Received an unrecoverable auth error, redirecting to login');
+				redirect(302, '/login');
+			}
+			if (!isRecoverableAuthError(e2.errorCode)) {
+				console.debug('[hooks] Received an non-recoverable error, redirecting to login');
+				redirect(302, '/login');
+			}
 		}
 	}
 
