@@ -641,11 +641,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlaylistTrack"
+        created_at:
+          type: string
+          format: date-time
       required:
         - id
         - name
         - type
         - tracks
+        - created_at
 
     ListPlaylistItem:
       type: object

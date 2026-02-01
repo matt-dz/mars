@@ -264,10 +264,11 @@ func (s Server) GetApiPlaylistsId(
 
 	// Return response
 	res := GetApiPlaylistsId200JSONResponse{
-		Id:     playlist.ID,
-		Name:   playlist.Name,
-		Type:   string(playlist.PlaylistType),
-		Tracks: make([]PlaylistTrack, len(tracks)),
+		Id:        playlist.ID,
+		Name:      playlist.Name,
+		Type:      string(playlist.PlaylistType),
+		Tracks:    make([]PlaylistTrack, len(tracks)),
+		CreatedAt: playlist.CreatedAt.Time,
 	}
 	for i, t := range tracks {
 		res.Tracks[i] = PlaylistTrack{

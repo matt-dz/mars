@@ -212,7 +212,8 @@ ORDER BY
 SELECT
   id,
   playlist_type,
-  name
+  name,
+  created_at
 FROM
   playlists
 WHERE

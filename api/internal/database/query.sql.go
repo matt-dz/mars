@@ -220,7 +220,8 @@ const getUserPlaylist = `-- name: GetUserPlaylist :one
 SELECT
   id,
   playlist_type,
-  name
+  name,
+  created_at
 FROM
   playlists
 WHERE
@@ -237,12 +238,18 @@ type GetUserPlaylistRow struct {
 	ID           uuid.UUID
 	PlaylistType PlaylistType
 	Name         string
+	CreatedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) GetUserPlaylist(ctx context.Context, arg GetUserPlaylistParams) (GetUserPlaylistRow, error) {
 	row := q.db.QueryRow(ctx, getUserPlaylist, arg.UserID, arg.ID)
 	var i GetUserPlaylistRow
-	err := row.Scan(&i.ID, &i.PlaylistType, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.PlaylistType,
+		&i.Name,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 
