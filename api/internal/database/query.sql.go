@@ -167,6 +167,24 @@ func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (Role, error) {
 	return role, err
 }
 
+const getUserSpotifyAccessToken = `-- name: GetUserSpotifyAccessToken :one
+SELECT
+  st.access_token
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1
+`
+
+func (q *Queries) GetUserSpotifyAccessToken(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getUserSpotifyAccessToken, id)
+	var access_token string
+	err := row.Scan(&access_token)
+	return access_token, err
+}
+
 const getUserSpotifyId = `-- name: GetUserSpotifyId :one
 SELECT
   u.spotify_id
@@ -320,6 +338,55 @@ func (q *Queries) UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpo
 		arg.ExpiresAt,
 		arg.SpotifyUserID,
 	)
+	return err
+}
+
+const upsertTrack = `-- name: UpsertTrack :exec
+INSERT INTO tracks (image_url, id, name, artists, href)
+  VALUES ($5, $1, $2, $3, $4)
+ON CONFLICT (id)
+  DO UPDATE SET
+    updated_at = NOW(),
+    image_url = EXCLUDED.image_url,
+    name = EXCLUDED.name,
+    artists = EXCLUDED.artists,
+    href = EXCLUDED.href
+`
+
+type UpsertTrackParams struct {
+	ID       string
+	Name     string
+	Artists  []string
+	Href     string
+	ImageUrl pgtype.Text
+}
+
+func (q *Queries) UpsertTrack(ctx context.Context, arg UpsertTrackParams) error {
+	_, err := q.db.Exec(ctx, upsertTrack,
+		arg.ID,
+		arg.Name,
+		arg.Artists,
+		arg.Href,
+		arg.ImageUrl,
+	)
+	return err
+}
+
+const upsertTrackListen = `-- name: UpsertTrackListen :exec
+INSERT INTO track_listens (user_id, track_id, played_at)
+  VALUES ($1, $2, $3)
+ON CONFLICT (user_id, track_id, played_at)
+  DO NOTHING
+`
+
+type UpsertTrackListenParams struct {
+	UserID   uuid.UUID
+	TrackID  string
+	PlayedAt pgtype.Timestamptz
+}
+
+func (q *Queries) UpsertTrackListen(ctx context.Context, arg UpsertTrackListenParams) error {
+	_, err := q.db.Exec(ctx, upsertTrackListen, arg.UserID, arg.TrackID, arg.PlayedAt)
 	return err
 }
 

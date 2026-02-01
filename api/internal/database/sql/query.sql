@@ -110,6 +110,16 @@ WHERE
   u.spotify_id IS NOT NULL
   AND u.id = $1;
 
+-- name: GetUserSpotifyAccessToken :one
+SELECT
+  st.access_token
+FROM
+  users u
+  JOIN spotify_tokens st ON st.spotify_user_id = u.spotify_id
+WHERE
+  u.spotify_id IS NOT NULL
+  AND u.id = $1;
+
 -- name: GetUserSpotifyId :one
 SELECT
   u.spotify_id
@@ -140,3 +150,20 @@ FROM
 ORDER BY
   created_at ASC
 LIMIT $1;
+
+-- name: UpsertTrack :exec
+INSERT INTO tracks (image_url, id, name, artists, href)
+  VALUES (sqlc.narg ('image_url'), $1, $2, $3, $4)
+ON CONFLICT (id)
+  DO UPDATE SET
+    updated_at = NOW(),
+    image_url = EXCLUDED.image_url,
+    name = EXCLUDED.name,
+    artists = EXCLUDED.artists,
+    href = EXCLUDED.href;
+
+-- name: UpsertTrackListen :exec
+INSERT INTO track_listens (user_id, track_id, played_at)
+  VALUES ($1, $2, $3)
+ON CONFLICT (user_id, track_id, played_at)
+  DO NOTHING;

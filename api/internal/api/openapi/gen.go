@@ -84,6 +84,11 @@ type SpotifyTokenRequest struct {
 	Code string `json:"code"`
 }
 
+// SyncSpotifyTracksRequest defines model for SyncSpotifyTracksRequest.
+type SyncSpotifyTracksRequest struct {
+	UserId openapi_types.UUID `json:"user_id"`
+}
+
 // AccessTokenHeader defines model for AccessTokenHeader.
 type AccessTokenHeader = string
 
@@ -110,6 +115,15 @@ type GetApiAuthVerifyParams struct {
 	Access *string `form:"access,omitempty" json:"access,omitempty"`
 }
 
+// PostApiIntegrationsSpotifyTracksSyncParams defines parameters for PostApiIntegrationsSpotifyTracksSync.
+type PostApiIntegrationsSpotifyTracksSyncParams struct {
+	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
+	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
+
+	// Access Access token
+	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
+}
+
 // PostApiOauthSpotifyTokenRefreshParams defines parameters for PostApiOauthSpotifyTokenRefresh.
 type PostApiOauthSpotifyTokenRefreshParams struct {
 	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
@@ -129,6 +143,9 @@ type GetApiUsersParams struct {
 
 // PostApiAuthRefreshJSONRequestBody defines body for PostApiAuthRefresh for application/json ContentType.
 type PostApiAuthRefreshJSONRequestBody = RefreshToken
+
+// PostApiIntegrationsSpotifyTracksSyncJSONRequestBody defines body for PostApiIntegrationsSpotifyTracksSync for application/json ContentType.
+type PostApiIntegrationsSpotifyTracksSyncJSONRequestBody = SyncSpotifyTracksRequest
 
 // PostApiLoginJSONRequestBody defines body for PostApiLogin for application/json ContentType.
 type PostApiLoginJSONRequestBody = LoginRequest
@@ -223,6 +240,11 @@ type ClientInterface interface {
 	// GetApiHealth request
 	GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiIntegrationsSpotifyTracksSyncWithBody request with any body
+	PostApiIntegrationsSpotifyTracksSyncWithBody(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiIntegrationsSpotifyTracksSync(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiLoginWithBody request with any body
 	PostApiLoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -286,6 +308,30 @@ func (c *Client) GetApiAuthVerify(ctx context.Context, params *GetApiAuthVerifyP
 
 func (c *Client) GetApiHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiHealthRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiIntegrationsSpotifyTracksSyncWithBody(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiIntegrationsSpotifyTracksSync(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiIntegrationsSpotifyTracksSyncRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -566,6 +612,78 @@ func NewGetApiHealthRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
+	return req, nil
+}
+
+// NewPostApiIntegrationsSpotifyTracksSyncRequest calls the generic PostApiIntegrationsSpotifyTracksSync builder with application/json body
+func NewPostApiIntegrationsSpotifyTracksSyncRequest(server string, params *PostApiIntegrationsSpotifyTracksSyncParams, body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody generates requests for PostApiIntegrationsSpotifyTracksSync with any type of body
+func NewPostApiIntegrationsSpotifyTracksSyncRequestWithBody(server string, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/integrations/spotify/tracks/sync")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "X-CSRF-Token", runtime.ParamLocationHeader, *params.XCSRFToken)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
 	return req, nil
 }
 
@@ -895,6 +1013,11 @@ type ClientWithResponsesInterface interface {
 	// GetApiHealthWithResponse request
 	GetApiHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiHealthResponse, error)
 
+	// PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse request with any body
+	PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error)
+
+	PostApiIntegrationsSpotifyTracksSyncWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error)
+
 	// PostApiLoginWithBodyWithResponse request with any body
 	PostApiLoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiLoginResponse, error)
 
@@ -984,6 +1107,32 @@ func (r GetApiHealthResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetApiHealthResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiIntegrationsSpotifyTracksSyncResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *Error
+	JSON401      *Error
+	JSON403      *Error
+	JSON404      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiIntegrationsSpotifyTracksSyncResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiIntegrationsSpotifyTracksSyncResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1170,6 +1319,23 @@ func (c *ClientWithResponses) GetApiHealthWithResponse(ctx context.Context, reqE
 	return ParseGetApiHealthResponse(rsp)
 }
 
+// PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse request with arbitrary body returning *PostApiIntegrationsSpotifyTracksSyncResponse
+func (c *ClientWithResponses) PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error) {
+	rsp, err := c.PostApiIntegrationsSpotifyTracksSyncWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiIntegrationsSpotifyTracksSyncResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostApiIntegrationsSpotifyTracksSyncWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error) {
+	rsp, err := c.PostApiIntegrationsSpotifyTracksSync(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiIntegrationsSpotifyTracksSyncResponse(rsp)
+}
+
 // PostApiLoginWithBodyWithResponse request with arbitrary body returning *PostApiLoginResponse
 func (c *ClientWithResponses) PostApiLoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiLoginResponse, error) {
 	rsp, err := c.PostApiLoginWithBody(ctx, contentType, body, reqEditors...)
@@ -1342,6 +1508,60 @@ func ParseGetApiHealthResponse(rsp *http.Response) (*GetApiHealthResponse, error
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiIntegrationsSpotifyTracksSyncResponse parses an HTTP response from a PostApiIntegrationsSpotifyTracksSyncWithResponse call
+func ParsePostApiIntegrationsSpotifyTracksSyncResponse(rsp *http.Response) (*PostApiIntegrationsSpotifyTracksSyncResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiIntegrationsSpotifyTracksSyncResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -1612,6 +1832,9 @@ type ServerInterface interface {
 	// Health check
 	// (GET /api/health)
 	GetApiHealth(w http.ResponseWriter, r *http.Request)
+	// Sync recent spotify tracks
+	// (POST /api/integrations/spotify/tracks/sync)
+	PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyTracksSyncParams)
 	// User login
 	// (POST /api/login)
 	PostApiLogin(w http.ResponseWriter, r *http.Request)
@@ -1651,6 +1874,12 @@ func (_ Unimplemented) GetApiAuthVerify(w http.ResponseWriter, r *http.Request, 
 // Health check
 // (GET /api/health)
 func (_ Unimplemented) GetApiHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Sync recent spotify tracks
+// (POST /api/integrations/spotify/tracks/sync)
+func (_ Unimplemented) PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyTracksSyncParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1807,6 +2036,67 @@ func (siw *ServerInterfaceWrapper) GetApiHealth(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApiHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostApiIntegrationsSpotifyTracksSync operation middleware
+func (siw *ServerInterfaceWrapper) PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostApiIntegrationsSpotifyTracksSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfTokenHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value AccessTokenHeader
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiIntegrationsSpotifyTracksSync(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2116,6 +2406,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/health", wrapper.GetApiHealth)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/integrations/spotify/tracks/sync", wrapper.PostApiIntegrationsSpotifyTracksSync)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/login", wrapper.PostApiLogin)
 	})
 	r.Group(func(r chi.Router) {
@@ -2242,6 +2535,68 @@ func (response GetApiHealth204Response) VisitGetApiHealthResponse(w http.Respons
 type GetApiHealth500JSONResponse Error
 
 func (response GetApiHealth500JSONResponse) VisitGetApiHealthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyTracksSyncRequestObject struct {
+	Params PostApiIntegrationsSpotifyTracksSyncParams
+	Body   *PostApiIntegrationsSpotifyTracksSyncJSONRequestBody
+}
+
+type PostApiIntegrationsSpotifyTracksSyncResponseObject interface {
+	VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error
+}
+
+type PostApiIntegrationsSpotifyTracksSync204Response struct {
+}
+
+func (response PostApiIntegrationsSpotifyTracksSync204Response) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type PostApiIntegrationsSpotifyTracksSync400JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyTracksSync400JSONResponse) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyTracksSync401JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyTracksSync401JSONResponse) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyTracksSync403JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyTracksSync403JSONResponse) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyTracksSync404JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyTracksSync404JSONResponse) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyTracksSync500JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyTracksSync500JSONResponse) VisitPostApiIntegrationsSpotifyTracksSyncResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -2511,6 +2866,9 @@ type StrictServerInterface interface {
 	// Health check
 	// (GET /api/health)
 	GetApiHealth(ctx context.Context, request GetApiHealthRequestObject) (GetApiHealthResponseObject, error)
+	// Sync recent spotify tracks
+	// (POST /api/integrations/spotify/tracks/sync)
+	PostApiIntegrationsSpotifyTracksSync(ctx context.Context, request PostApiIntegrationsSpotifyTracksSyncRequestObject) (PostApiIntegrationsSpotifyTracksSyncResponseObject, error)
 	// User login
 	// (POST /api/login)
 	PostApiLogin(ctx context.Context, request PostApiLoginRequestObject) (PostApiLoginResponseObject, error)
@@ -2636,6 +2994,39 @@ func (sh *strictHandler) GetApiHealth(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetApiHealthResponseObject); ok {
 		if err := validResponse.VisitGetApiHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostApiIntegrationsSpotifyTracksSync operation middleware
+func (sh *strictHandler) PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyTracksSyncParams) {
+	var request PostApiIntegrationsSpotifyTracksSyncRequestObject
+
+	request.Params = params
+
+	var body PostApiIntegrationsSpotifyTracksSyncJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiIntegrationsSpotifyTracksSync(ctx, request.(PostApiIntegrationsSpotifyTracksSyncRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiIntegrationsSpotifyTracksSync")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiIntegrationsSpotifyTracksSyncResponseObject); ok {
+		if err := validResponse.VisitPostApiIntegrationsSpotifyTracksSyncResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

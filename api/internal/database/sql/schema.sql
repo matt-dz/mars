@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS tracks (
   artists text[] NOT NULL,
   href text NOT NULL,
   image_url text,
-  raw jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT NOW(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

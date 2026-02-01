@@ -139,7 +139,11 @@ func (m Middleware) OAPIErrorHandler(
 }
 
 func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-	adminRoutes := []string{"/api/oauth/spotify/token/refresh", "/api/users"}
+	adminRoutes := []string{
+		"/api/oauth/spotify/token/refresh",
+		"/api/integrations/spotify/tracks/sync",
+		"/api/users",
+	}
 	reqid := requestid.FromContext(ctx)
 
 	if input.SecuritySchemeName == "" {

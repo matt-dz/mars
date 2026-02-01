@@ -19,6 +19,7 @@ type Querier interface {
 	GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, error)
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
 	GetUserRole(ctx context.Context, id uuid.UUID) (Role, error)
+	GetUserSpotifyAccessToken(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserSpotifyId(ctx context.Context, id uuid.UUID) (pgtype.Text, error)
 	GetUserSpotifyRefreshToken(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error)
@@ -27,6 +28,8 @@ type Querier interface {
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error
 	UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpotifyTokensParams) error
+	UpsertTrack(ctx context.Context, arg UpsertTrackParams) error
+	UpsertTrackListen(ctx context.Context, arg UpsertTrackListenParams) error
 	UpsertUserSpotifyTokens(ctx context.Context, arg UpsertUserSpotifyTokensParams) error
 }
 

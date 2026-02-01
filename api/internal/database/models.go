@@ -127,7 +127,6 @@ type Track struct {
 	Artists   []string
 	Href      string
 	ImageUrl  pgtype.Text
-	Raw       []byte
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
