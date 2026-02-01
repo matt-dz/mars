@@ -129,6 +129,7 @@ type PlaylistTrack struct {
 	Id       string   `json:"id"`
 	ImageUrl *string  `json:"image_url,omitempty"`
 	Name     string   `json:"name"`
+	Plays    int      `json:"plays"`
 }
 
 // RefreshToken defines model for RefreshToken.

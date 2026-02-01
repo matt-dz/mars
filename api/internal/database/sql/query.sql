@@ -226,7 +226,8 @@ SELECT
   t.name,
   t.artists,
   t.href,
-  t.image_url
+  t.image_url,
+  pt.plays
 FROM
   playlist_tracks pt
   JOIN tracks t ON pt.track_id = t.id

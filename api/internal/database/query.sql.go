@@ -110,7 +110,8 @@ SELECT
   t.name,
   t.artists,
   t.href,
-  t.image_url
+  t.image_url,
+  pt.plays
 FROM
   playlist_tracks pt
   JOIN tracks t ON pt.track_id = t.id
@@ -127,6 +128,7 @@ type GetPlaylistTracksRow struct {
 	Artists  []string
 	Href     string
 	ImageUrl pgtype.Text
+	Plays    int32
 }
 
 func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) ([]GetPlaylistTracksRow, error) {
@@ -144,6 +146,7 @@ func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) (
 			&i.Artists,
 			&i.Href,
 			&i.ImageUrl,
+			&i.Plays,
 		); err != nil {
 			return nil, err
 		}

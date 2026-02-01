@@ -624,11 +624,15 @@ components:
           type: string
         image_url:
           type: string
+        plays:
+          type: integer
+          minimum: 1
       required:
         - id
         - name
         - artists
         - href
+        - plays
 
     Playlist:
       type: object

@@ -28,7 +28,8 @@ export const TrackSchema = z.object({
 	name: z.string(),
 	artists: z.array(z.string()),
 	href: z.string(),
-	image_url: z.string().optional()
+	image_url: z.string().optional(),
+	plays: z.int()
 });
 
 export type Track = z.infer<typeof TrackSchema>;

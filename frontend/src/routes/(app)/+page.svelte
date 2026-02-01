@@ -58,7 +58,9 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-destructive/5 p-16 text-center">
+		<div
+			class="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-destructive/5 p-16 text-center"
+		>
 			<div class="rounded-full bg-gradient-to-br from-primary/20 to-destructive/10 p-4">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
