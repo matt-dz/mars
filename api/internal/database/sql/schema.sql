@@ -2,7 +2,8 @@ DO $$
 BEGIN
   CREATE TYPE ROLE AS enum (
     'admin',
-    'user'
+    'user',
+    'service'
 );
 EXCEPTION
   WHEN duplicate_object THEN

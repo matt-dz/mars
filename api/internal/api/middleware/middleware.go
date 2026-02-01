@@ -249,11 +249,12 @@ func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.Auth
 	// Authorize user
 	roleClaim := jwtAccess.Claims.(jwt.MapClaims)["role"].(string)
 	userRole := role.ToRole(roleClaim)
-	if slices.Contains(adminRoutes, input.RequestValidationInput.Request.URL.Path) && userRole != role.RoleAdmin {
+	if slices.Contains(adminRoutes, input.RequestValidationInput.Request.URL.Path) &&
+		(userRole != role.RoleAdmin && userRole != role.RoleService) {
 		return &apierror.Error{
 			Code:    apierror.InsufficientPermissions,
 			Status:  apierror.InsufficientPermissions.Status(),
-			Message: "user does not have admin role",
+			Message: "user does not have admin/service role",
 			ErrorID: reqid,
 		}
 	}

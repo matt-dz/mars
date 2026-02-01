@@ -35,9 +35,16 @@ func RefreshToken(ctx context.Context, client marshttp.Client, userid, accessTok
 		return fmt.Errorf("sending request: %w", err)
 	}
 	defer func() { _ = res.Body.Close() }()
+
+	// User does not have a spotify integration
+	if res.StatusCode == http.StatusNotFound {
+		return nil
+	}
+
 	if res.StatusCode != http.StatusNoContent {
 		body, _ := io.ReadAll(res.Body)
 		return fmt.Errorf("request failed with non-200 status: status=%d body=%s", res.StatusCode, string(body))
 	}
+
 	return nil
 }

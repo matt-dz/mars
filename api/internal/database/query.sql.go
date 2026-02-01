@@ -49,6 +49,25 @@ func (q *Queries) CreateAdminUser(ctx context.Context, arg CreateAdminUserParams
 	return id, err
 }
 
+const createServiceAccount = `-- name: CreateServiceAccount :one
+INSERT INTO users (email, role, password_hash)
+  VALUES (trim(lower($2::text)), 'service', $1)
+RETURNING
+  id
+`
+
+type CreateServiceAccountParams struct {
+	PasswordHash string
+	Email        string
+}
+
+func (q *Queries) CreateServiceAccount(ctx context.Context, arg CreateServiceAccountParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createServiceAccount, arg.PasswordHash, arg.Email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
   id,
@@ -210,6 +229,24 @@ SELECT
 func (q *Queries) Ping(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, ping)
 	return err
+}
+
+const serviceAccountExists = `-- name: ServiceAccountExists :one
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      users
+    WHERE
+      ROLE = 'service')
+`
+
+func (q *Queries) ServiceAccountExists(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, serviceAccountExists)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :exec

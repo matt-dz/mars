@@ -14,6 +14,7 @@ import (
 	"mars/internal/admin"
 	"mars/internal/database"
 	"mars/internal/env"
+	"mars/internal/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -128,4 +129,17 @@ func Admin(ctx context.Context, db database.Querier, logger *slog.Logger) error 
 		return fmt.Errorf("seeding admin user: %w", err)
 	}
 	return nil
+}
+
+func ServiceAccount(ctx context.Context, db database.Querier, logger *slog.Logger) (email, password string, err error) {
+	email, password, err = service.LoadOrCreateCredentials(logger)
+	if err != nil {
+		return "", "", fmt.Errorf("loading service account credentials: %w", err)
+	}
+
+	if err := service.SeedServiceAccount(ctx, db, logger, email, password); err != nil {
+		return "", "", fmt.Errorf("seeding service account: %w", err)
+	}
+
+	return email, password, nil
 }

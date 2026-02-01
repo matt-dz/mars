@@ -59,6 +59,11 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		return fmt.Errorf("setting up admin: %w", err)
 	}
 
+	serviceEmail, servicePassword, err := setup.ServiceAccount(ctx, db, logger)
+	if err != nil {
+		return fmt.Errorf("setting up service account: %w", err)
+	}
+
 	e := env.New()
 	e.Logger = logger
 	e.Database = db
@@ -79,17 +84,15 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		port = uint16(p)
 	}
 
-	// Start Spotify token refresh goroutine
-	adminEmail := os.Getenv("ADMIN_EMAIL")
-	adminPassword := os.Getenv("ADMIN_PASSWORD")
-	go runSpotifyTokenRefresh(ctx, logger, *e.HTTP, adminEmail, adminPassword)
+	// Start Spotify token refresh goroutine using service account
+	go runSpotifyTokenRefresh(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
 
 	return api.Start(ctx, port, e)
 }
 
 // runSpotifyTokenRefresh waits a specified interval before refreshing all user spotify tokens.
 func runSpotifyTokenRefresh(ctx context.Context, logger *slog.Logger, client marshttp.Client, email, password string) {
-	ticker := time.NewTicker(spotifyRefreshInterval)
+	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
 
 	for {

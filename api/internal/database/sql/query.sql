@@ -18,6 +18,22 @@ INSERT INTO users (email, role, password_hash)
 RETURNING
   id;
 
+-- name: ServiceAccountExists :one
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      users
+    WHERE
+      ROLE = 'service');
+
+-- name: CreateServiceAccount :one
+INSERT INTO users (email, role, password_hash)
+  VALUES (trim(lower(@email::text)), 'service', $1)
+RETURNING
+  id;
+
 -- name: GetUserByEmail :one
 SELECT
   id,

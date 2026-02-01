@@ -10,20 +10,20 @@ import (
 type Role int
 
 const (
+	RoleService Role = 200
 	RoleAdmin   Role = 200
 	RoleUser    Role = 100
 	RoleUnknown Role = math.MinInt
 )
 
 func (r Role) String() string {
-	switch r {
-	case RoleAdmin:
+	if r == RoleAdmin || r == RoleService {
 		return "admin"
-	case RoleUser:
-		return "user"
-	default:
-		return "unknown"
 	}
+	if r == RoleUser {
+		return "user"
+	}
+	return "unknown"
 }
 
 func ToRole(role string) Role {
@@ -32,6 +32,8 @@ func ToRole(role string) Role {
 		return RoleAdmin
 	case "user":
 		return RoleUser
+	case "service":
+		return RoleService
 	default:
 		return RoleUnknown
 	}
@@ -43,6 +45,8 @@ func DBToRole(role database.Role) Role {
 		return RoleUser
 	case database.RoleAdmin:
 		return RoleAdmin
+	case database.RoleService:
+		return RoleService
 	default:
 		return RoleUnknown
 	}

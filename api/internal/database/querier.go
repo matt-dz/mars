@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	AdminExists(ctx context.Context) (bool, error)
 	CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error)
+	CreateServiceAccount(ctx context.Context, arg CreateServiceAccountParams) (uuid.UUID, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserIDs(ctx context.Context, limit int32) ([]uuid.UUID, error)
 	GetUserRefreshToken(ctx context.Context, id uuid.UUID) (GetUserRefreshTokenRow, error)
@@ -22,6 +23,7 @@ type Querier interface {
 	GetUserSpotifyRefreshToken(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error)
 	Ping(ctx context.Context) error
+	ServiceAccountExists(ctx context.Context) (bool, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error
 	UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpotifyTokensParams) error
