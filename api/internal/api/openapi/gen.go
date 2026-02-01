@@ -33,8 +33,8 @@ const (
 
 // Defines values for Role.
 const (
-	Admin Role = "admin"
-	User  Role = "user"
+	RoleAdmin Role = "admin"
+	RoleUser  Role = "user"
 )
 
 // Defines values for WeeklyOrMonthlyRequestType.
@@ -159,6 +159,13 @@ type SpotifyTokenRequest struct {
 // SyncSpotifyTracksRequest defines model for SyncSpotifyTracksRequest.
 type SyncSpotifyTracksRequest struct {
 	UserId openapi_types.UUID `json:"user_id"`
+}
+
+// User defines model for User.
+type User struct {
+	Email openapi_types.Email `json:"email"`
+	Id    openapi_types.UUID  `json:"id"`
+	Role  Role                `json:"role"`
 }
 
 // WeeklyOrMonthlyRequest defines model for WeeklyOrMonthlyRequest.
@@ -1475,6 +1482,7 @@ func (r PostApiAuthRefreshResponse) StatusCode() int {
 type GetApiAuthVerifyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *User
 	JSON401      *Error
 	JSON403      *Error
 	JSON500      *Error
@@ -1985,6 +1993,13 @@ func ParseGetApiAuthVerifyResponse(rsp *http.Response) (*GetApiAuthVerifyRespons
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -3340,12 +3355,13 @@ type GetApiAuthVerifyResponseObject interface {
 	VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error
 }
 
-type GetApiAuthVerify204Response struct {
-}
+type GetApiAuthVerify200JSONResponse User
 
-func (response GetApiAuthVerify204Response) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
+func (response GetApiAuthVerify200JSONResponse) VisitGetApiAuthVerifyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetApiAuthVerify401JSONResponse Error

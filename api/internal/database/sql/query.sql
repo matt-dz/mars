@@ -53,6 +53,15 @@ FROM
 WHERE
   id = $1;
 
+-- name: GetUser :one
+SELECT
+  email,
+  ROLE
+FROM
+  users
+WHERE
+  id = $1;
+
 -- name: UpdateUserRefreshToken :exec
 UPDATE
   users

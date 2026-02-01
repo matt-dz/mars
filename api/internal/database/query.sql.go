@@ -158,6 +158,28 @@ func (q *Queries) GetPlaylistTracks(ctx context.Context, playlistID uuid.UUID) (
 	return items, nil
 }
 
+const getUser = `-- name: GetUser :one
+SELECT
+  email,
+  ROLE
+FROM
+  users
+WHERE
+  id = $1
+`
+
+type GetUserRow struct {
+	Email string
+	Role  Role
+}
+
+func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i GetUserRow
+	err := row.Scan(&i.Email, &i.Role)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
   id,

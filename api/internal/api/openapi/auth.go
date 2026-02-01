@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 type loginSuccessResponse struct {
@@ -383,5 +384,34 @@ func (s Server) PostApiAuthRefresh(ctx context.Context, request PostApiAuthRefre
 func (s Server) GetApiAuthVerify(
 	ctx context.Context, request GetApiAuthVerifyRequestObject,
 ) (GetApiAuthVerifyResponseObject, error) {
-	return GetApiAuthVerify204Response{}, nil
+	reqid := requestid.FromContext(ctx)
+	userid, err := tokens.UserIDFromContext(ctx)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get userid", slog.Any("error", err))
+		return GetApiAuthVerify500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	// Get user
+	s.Env.Logger.DebugContext(ctx, "getting user", slog.Any("error", err))
+	user, err := s.Env.Database.GetUser(ctx, userid)
+	if err != nil {
+		s.Env.Logger.ErrorContext(ctx, "failed to get user", slog.Any("error", err))
+		return GetApiAuthVerify500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	return GetApiAuthVerify200JSONResponse{
+		Email: openapi_types.Email(user.Email),
+		Id:    userid,
+		Role:  Role(role.DBToRole(user.Role).String()),
+	}, nil
 }

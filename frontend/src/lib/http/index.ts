@@ -12,7 +12,8 @@ import {
 	isUnrecoverableAuthError,
 	isRecoverableAuthError,
 	AuthenticationError,
-	LoginResponseSchema
+	LoginResponseSchema,
+	ApiErrorSchema
 } from '$lib/api/errors';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
@@ -108,26 +109,24 @@ function createRefreshHooks(kyInstance: KyInstance) {
 			}
 
 			// Try to parse the error to check if it's unrecoverable
-			try {
-				const errorBody = await response.clone().json();
-				console.debug('[auth] Error body:', errorBody);
+			const errorBody = ApiErrorSchema.safeParse(await response.clone().json());
+			if (!errorBody.success) {
+				return response;
+			}
+			console.debug('[auth] Error body:', errorBody);
 
-				if (errorBody.code && isUnrecoverableAuthError(errorBody.code)) {
-					console.debug('[auth] Unrecoverable error:', errorBody.code);
-					if (browser) {
-						goto(resolve('/login'));
-					}
-					throw new AuthenticationError(errorBody.message, errorBody.code);
+			if (isUnrecoverableAuthError(errorBody.data.code)) {
+				console.debug('[auth] Unrecoverable error:', errorBody.data.code);
+				if (browser) {
+					goto(resolve('/login'));
 				}
+				return response;
+			}
 
-				// If it's not a recoverable auth error, don't try to refresh
-				if (errorBody.code && !isRecoverableAuthError(errorBody.code)) {
-					console.debug('[auth] Non-recoverable error, skipping refresh:', errorBody.code);
-					return;
-				}
-			} catch (e) {
-				if (e instanceof AuthenticationError) throw e;
-				console.debug('[auth] Could not parse error body, attempting refresh');
+			// If it's not a recoverable auth error, don't try to refresh
+			if (!isRecoverableAuthError(errorBody.data.code)) {
+				console.debug('[auth] Non-recoverable error, skipping refresh:', errorBody.data.code);
+				return response;
 			}
 
 			// Attempt to refresh the token

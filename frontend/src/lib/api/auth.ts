@@ -1,10 +1,11 @@
 import { type FetchFn } from '@/http';
 import { isHTTPError } from 'ky';
 import { ApiErrorSchema, HTTPError } from './errors';
+import { UserSchema, type User } from './types';
 
-export async function verifySession(fetch: FetchFn) {
+export async function verifySession(fetch: FetchFn): Promise<User> {
 	try {
-		return await fetch.get('api/auth/verify');
+		return UserSchema.parse(await fetch.get('api/auth/verify').json());
 	} catch (e) {
 		if (isHTTPError(e)) {
 			const err = ApiErrorSchema.safeParse(await e.response.clone().json());
