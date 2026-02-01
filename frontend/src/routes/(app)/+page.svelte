@@ -24,19 +24,19 @@
 			cutoff.setFullYear(now.getFullYear() - 1);
 		}
 
-		return playlists.filter((p) => new Date(p.timestamp) >= cutoff);
+		return playlists.filter((p) => new Date(p.created_at) >= cutoff);
 	}
 
 	function sortPlaylists(playlists: Playlist[], order: string): Playlist[] {
 		return [...playlists].sort((a, b) => {
-			const dateA = new Date(a.timestamp).getTime();
-			const dateB = new Date(b.timestamp).getTime();
+			const dateA = new Date(a.created_at).getTime();
+			const dateB = new Date(b.created_at).getTime();
 			return order === 'desc' ? dateB - dateA : dateA - dateB;
 		});
 	}
 
 	let filteredPlaylists = $derived(
-		sortPlaylists(filterByPeriod(data.playlists, period), sortOrder)
+		sortPlaylists(filterByPeriod(data.playlists.playlists, period), sortOrder)
 	);
 </script>
 

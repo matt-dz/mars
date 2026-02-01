@@ -25,7 +25,7 @@
 	}
 
 	let formattedDate = $derived(
-		new Date(data.playlist.timestamp).toLocaleDateString('en-US', {
+		new Date(data.playlist.created_at).toLocaleDateString('en-US', {
 			year: 'numeric',
 			month: 'long',
 			day: 'numeric'
@@ -44,7 +44,7 @@
 		<div>
 			<h1 class="text-3xl font-bold">{data.playlist.name}</h1>
 			<p class="mt-1 text-muted-foreground">
-				{data.tracks.length} tracks &middot; {formattedDate}
+				{data.playlist.tracks.length} tracks &middot; {formattedDate}
 			</p>
 		</div>
 		<Button onclick={handleAddToSpotify} disabled={isAddingToSpotify}>
@@ -62,5 +62,5 @@
 		</div>
 	{/if}
 
-	<TrackList tracks={data.tracks} />
+	<TrackList tracks={data.playlist.tracks} />
 </div>

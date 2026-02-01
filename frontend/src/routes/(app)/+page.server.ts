@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 			redirect(302, '/login');
 		}
 
-		console.debug('[home] Fetching integration statuses');
+		console.debug('[home] Fetching playlists');
 		const fetchFn = wrapWithCredentials(
 			fetch,
 			tokens.accessToken,

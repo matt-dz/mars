@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 export const UserSchema = z.object({
 	id: z.string(),
-	email: z.string().email(),
+	email: z.email(),
 	role: z.enum(['admin', 'user'])
 });
 
@@ -10,21 +10,25 @@ export type User = z.infer<typeof UserSchema>;
 
 export const PlaylistSchema = z.object({
 	id: z.string(),
-	user_id: z.string(),
-	playlist_type: z.enum(['weekly', 'monthly']),
+	type: z.enum(['weekly', 'monthly', 'custom']),
 	name: z.string(),
-	timestamp: z.string(),
-	created_at: z.string()
+	created_at: z.iso.datetime()
 });
 
 export type Playlist = z.infer<typeof PlaylistSchema>;
+
+export const PlaylistsSchema = z.object({
+	playlists: z.array(PlaylistSchema)
+});
+
+export type Playlists = z.infer<typeof PlaylistsSchema>;
 
 export const TrackSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	artists: z.array(z.string()),
 	href: z.string(),
-	image_url: z.string().nullable()
+	image_url: z.string().optional()
 });
 
 export type Track = z.infer<typeof TrackSchema>;
