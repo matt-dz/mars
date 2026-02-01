@@ -49,7 +49,7 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 
 	// Get recent tracks
 	s.Env.Logger.DebugContext(ctx, "getting recently played tracks")
-	const endpoint = "https://api.spotify.com/v1/me/player/recently-played"
+	const endpoint = "https://api.spotify.com/v1/me/player/recently-played?limit=50"
 	req, err := retryablehttp.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		s.Env.Logger.ErrorContext(ctx, "failed to create request", slog.Any("error", err))
@@ -87,7 +87,7 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 			Track struct {
 				Album struct {
 					Images []struct {
-						Url string `json:"url"`
+						URL string `json:"url"`
 					} `json:"images"`
 				} `json:"album"`
 				Artists []struct {
@@ -123,7 +123,7 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 		}
 		var imageURL string
 		if len(item.Track.Album.Images) > 0 {
-			imageURL = item.Track.Album.Images[0].Url
+			imageURL = item.Track.Album.Images[0].URL
 		}
 		err = s.Env.Database.UpsertTrack(ctx, database.UpsertTrackParams{
 			ID:      item.Track.ID,
