@@ -41,20 +41,42 @@
 </script>
 
 <div class="container mx-auto px-4 py-8">
-	<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-		<h1 class="text-3xl font-bold">Your Playlists</h1>
+	<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+		<div class="space-y-1">
+			<h1 class="text-3xl font-bold tracking-tight">Your Playlists</h1>
+			<p class="text-muted-foreground">
+				{filteredPlaylists.length} playlist{filteredPlaylists.length === 1 ? '' : 's'}
+			</p>
+		</div>
 		<PlaylistFilters bind:period bind:sortOrder />
 	</div>
 
 	{#if filteredPlaylists.length > 0}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 			{#each filteredPlaylists as playlist (playlist.id)}
 				<PlaylistCard {playlist} />
 			{/each}
 		</div>
 	{:else}
-		<div class="rounded-lg border border-dashed p-12 text-center">
-			<p class="text-muted-foreground">No playlists found for the selected period.</p>
+		<div class="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-destructive/5 p-16 text-center">
+			<div class="rounded-full bg-gradient-to-br from-primary/20 to-destructive/10 p-4">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					class="h-8 w-8 text-primary/60"
+				>
+					<path d="M9 18V5l12-2v13" />
+					<circle cx="6" cy="18" r="3" />
+					<circle cx="18" cy="16" r="3" />
+				</svg>
+			</div>
+			<div class="space-y-1">
+				<p class="font-medium">No playlists found</p>
+				<p class="text-sm text-muted-foreground">Try adjusting your filters to see more results.</p>
+			</div>
 		</div>
 	{/if}
 </div>
