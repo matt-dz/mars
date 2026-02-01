@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	marshttp "mars/internal/http"
 	"mars/internal/spotify"
@@ -140,6 +141,81 @@ func SyncSpotifyTracks(ctx context.Context, client marshttp.Client, email, passw
 			if err != nil {
 				mtx.Lock()
 				errs = append(errs, fmt.Errorf("syncing tracks for user (%s): %w", id, err))
+				mtx.Unlock()
+			}
+		})
+	}
+	wg.Wait()
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errors.Join(errs...)
+}
+
+func CreatePlaylist(ctx context.Context, client marshttp.Client,
+	email, password, playlisttype string,
+	year int, month time.Month, day int,
+) error {
+	accessToken, _, csrfToken, err := Login(ctx, client, email, password)
+	if err != nil {
+		return fmt.Errorf("logging in: %w", err)
+	}
+
+	userids, err := ListUsers(ctx, client, accessToken)
+	if err != nil {
+		return fmt.Errorf("listing users: %w", err)
+	}
+
+	var wg sync.WaitGroup
+	var mtx sync.Mutex
+	var errs []error
+	for _, id := range userids {
+		wg.Go(func() {
+			// Create request
+			const endpoint = "http://localhost:8080/api/playlists"
+			body, err := json.Marshal(map[string]any{
+				"user_id": id,
+				"start_date": map[string]int{
+					"year":  year,
+					"month": int(month),
+					"day":   day,
+				},
+				"type": playlisttype,
+			})
+			if err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("marshaling body for user (%s): %w", id, err))
+				mtx.Unlock()
+			}
+			req, err := retryablehttp.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+			if err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("creating request for user (%s): %w", id, err))
+				mtx.Unlock()
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-CSRF-Token", csrfToken)
+			req.Header.Set("Cookie", fmt.Sprintf("access=%s; csrf=%s", accessToken, csrfToken))
+
+			// Send request
+			res, err := client.Do(req)
+			if err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("sending request for user (%s): %w", id, err))
+				mtx.Unlock()
+			}
+			defer func() { _ = res.Body.Close() }()
+			// No tracks listened to, this is fine.
+			if res.StatusCode == http.StatusConflict {
+				return
+			}
+			if res.StatusCode != http.StatusCreated {
+				body, _ := io.ReadAll(res.Body)
+				mtx.Lock()
+				errs = append(errs,
+					fmt.Errorf("request failed with non-201 status: status=%d body=\"%s\"", res.StatusCode, string(body)))
 				mtx.Unlock()
 			}
 		})

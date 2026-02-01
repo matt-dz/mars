@@ -94,6 +94,12 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	// Start Spotify track sync goroutine using service account
 	go runSpotifyTrackSync(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
 
+	// Start weekly playlist goroutine using service account
+	go runCreateWeeklyPlaylist(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
+
+	// Start monthly playlist gorouting using service account
+	go runCreateMonthlyPlaylist(ctx, logger, *e.HTTP, serviceEmail, servicePassword)
+
 	return api.Start(ctx, port, e)
 }
 
@@ -134,6 +140,99 @@ func runSpotifyTrackSync(ctx context.Context, logger *slog.Logger, client marsht
 				logger.Error("failed to sync spotify tracks", "error", err)
 			} else {
 				logger.Info("synced spotify tracks")
+			}
+		}
+	}
+}
+
+// runCreateWeeklyPlaylist creates weekly playlists for all users every Friday at 5 PM America/New_York time.
+func runCreateWeeklyPlaylist(ctx context.Context, logger *slog.Logger, client marshttp.Client, email, password string) {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		log.Fatalf("failed to load timezone: %v", err)
+	}
+
+	daysUntilTarget := func(now time.Time) time.Time {
+		// today at 17:00
+		target := time.Date(
+			now.Year(), now.Month(), now.Day(),
+			17, 0, 0, 0, loc,
+		)
+
+		// days til friday
+		daysUntil := ((int(time.Sunday) - int(now.Weekday())) + 7) % 7
+
+		// friday, but we're past target
+		if daysUntil == 0 && now.After(target) {
+			daysUntil = 7
+		}
+
+		return target.AddDate(0, 0, daysUntil)
+	}
+
+	for {
+		now := time.Now().In(loc)
+		next := daysUntilTarget(now)
+		timer := time.NewTimer(time.Until(next))
+
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+			now = time.Now().In(loc)
+			logger.Info("creating playlists", slog.Time("date", now))
+			err = mars.CreatePlaylist(ctx, client, email, password, "weekly", now.Year(), now.Month(), now.Day())
+			if err != nil {
+				logger.Error("failed to create weekly playlist", slog.Any("error", err))
+			} else {
+				logger.Info("created monthly playlists")
+			}
+		}
+	}
+}
+
+// runCreateMonthlyPlaylist creates monthly playlists for all users every first of the month at 5 PM.
+func runCreateMonthlyPlaylist(
+	ctx context.Context, logger *slog.Logger, client marshttp.Client, email, password string,
+) {
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		log.Fatalf("failed to load timezone: %v", err)
+	}
+
+	daysUntilTarget := func(now time.Time) time.Time {
+		// today at 17:00
+		target := time.Date(
+			now.Year(), now.Month(), now.Day(),
+			17, 0, 0, 0, loc,
+		)
+
+		// past target, lets wait for next month
+		if now.After(target) {
+			return target.AddDate(0, 1, 0)
+		}
+
+		return target
+	}
+
+	for {
+		now := time.Now().In(loc)
+		next := daysUntilTarget(now)
+		timer := time.NewTimer(time.Until(next))
+
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+			now = time.Now().In(loc)
+			logger.Info("creating playlists", slog.Time("date", now))
+			err = mars.CreatePlaylist(ctx, client, email, password, "monthly", now.Year(), now.Month(), now.Day())
+			if err != nil {
+				logger.Error("failed to create monthly playlist", slog.Any("error", err))
+			} else {
+				logger.Info("created monthly playlists")
 			}
 		}
 	}
