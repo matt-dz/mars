@@ -10,6 +10,8 @@ import (
 	"mars/internal/database"
 	marshttp "mars/internal/http"
 	"mars/internal/log"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type envKeyType struct{}
@@ -20,6 +22,7 @@ var envKey envKeyType
 type Env struct {
 	Logger   *slog.Logger
 	Database database.Querier
+	Pool     *pgxpool.Pool
 	HTTP     *marshttp.Client
 	vars     map[string]string
 }

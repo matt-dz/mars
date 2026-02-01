@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS playlists (
   user_id uuid,
   playlist_type playlist_type NOT NULL,
   name text NOT NULL,
-  timestamp timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE

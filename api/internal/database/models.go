@@ -102,7 +102,6 @@ type Playlist struct {
 	UserID       uuid.UUID
 	PlaylistType PlaylistType
 	Name         string
-	Timestamp    pgtype.Timestamptz
 	CreatedAt    pgtype.Timestamptz
 }
 

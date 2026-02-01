@@ -167,3 +167,30 @@ INSERT INTO track_listens (user_id, track_id, played_at)
   VALUES ($1, $2, $3)
 ON CONFLICT (user_id, track_id, played_at)
   DO NOTHING;
+
+-- name: ListensByTrackInRange :many
+SELECT
+  track_id,
+  COUNT(*)::bigint AS listen_count
+FROM
+  track_listens
+WHERE
+  user_id = $1
+  AND played_at >= @start_date::timestamptz
+  AND played_at < @end_date::timestamptz
+GROUP BY
+  track_id
+ORDER BY
+  listen_count DESC,
+  track_id ASC
+LIMIT 50;
+
+-- name: CreateMonthlyPlaylist :one
+INSERT INTO playlists (user_id, playlist_type, name)
+  VALUES ($1, 'monthly', $2)
+RETURNING
+  id;
+
+-- name: AddPlaylistTrack :exec
+INSERT INTO playlist_tracks (playlist_id, track_id, plays)
+  VALUES ($1, $2, $3);

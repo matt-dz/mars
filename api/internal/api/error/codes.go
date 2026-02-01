@@ -16,6 +16,7 @@ const (
 	ExpiredRefreshToken     ErrorCode = "expired_refresh_token"
 	InsufficientPermissions ErrorCode = "insufficient_permissions"
 	NoSpotifyIntegration    ErrorCode = "no_spotify_integration"
+	NoTracksListened        ErrorCode = "no_tracks_listened"
 )
 
 var errorCodeToStatusCode = map[ErrorCode]int{
@@ -30,6 +31,7 @@ var errorCodeToStatusCode = map[ErrorCode]int{
 	ExpiredRefreshToken:     http.StatusUnauthorized,
 	InvalidCredentials:      http.StatusUnauthorized,
 	NoSpotifyIntegration:    http.StatusNotFound,
+	NoTracksListened:        http.StatusConflict,
 }
 
 func (ec ErrorCode) Status() int {

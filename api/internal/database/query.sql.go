@@ -12,6 +12,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addPlaylistTrack = `-- name: AddPlaylistTrack :exec
+INSERT INTO playlist_tracks (playlist_id, track_id, plays)
+  VALUES ($1, $2, $3)
+`
+
+type AddPlaylistTrackParams struct {
+	PlaylistID uuid.UUID
+	TrackID    string
+	Plays      int32
+}
+
+func (q *Queries) AddPlaylistTrack(ctx context.Context, arg AddPlaylistTrackParams) error {
+	_, err := q.db.Exec(ctx, addPlaylistTrack, arg.PlaylistID, arg.TrackID, arg.Plays)
+	return err
+}
+
 const adminExists = `-- name: AdminExists :one
 SELECT
   EXISTS (
@@ -44,6 +60,25 @@ type CreateAdminUserParams struct {
 
 func (q *Queries) CreateAdminUser(ctx context.Context, arg CreateAdminUserParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createAdminUser, arg.PasswordHash, arg.Email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createMonthlyPlaylist = `-- name: CreateMonthlyPlaylist :one
+INSERT INTO playlists (user_id, playlist_type, name)
+  VALUES ($1, 'monthly', $2)
+RETURNING
+  id
+`
+
+type CreateMonthlyPlaylistParams struct {
+	UserID uuid.UUID
+	Name   string
+}
+
+func (q *Queries) CreateMonthlyPlaylist(ctx context.Context, arg CreateMonthlyPlaylistParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createMonthlyPlaylist, arg.UserID, arg.Name)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -237,6 +272,55 @@ func (q *Queries) GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUI
 	var expires_at pgtype.Timestamptz
 	err := row.Scan(&expires_at)
 	return expires_at, err
+}
+
+const listensByTrackInRange = `-- name: ListensByTrackInRange :many
+SELECT
+  track_id,
+  COUNT(*)::bigint AS listen_count
+FROM
+  track_listens
+WHERE
+  user_id = $1
+  AND played_at >= $2::timestamptz
+  AND played_at < $3::timestamptz
+GROUP BY
+  track_id
+ORDER BY
+  listen_count DESC,
+  track_id ASC
+LIMIT 50
+`
+
+type ListensByTrackInRangeParams struct {
+	UserID    uuid.UUID
+	StartDate pgtype.Timestamptz
+	EndDate   pgtype.Timestamptz
+}
+
+type ListensByTrackInRangeRow struct {
+	TrackID     string
+	ListenCount int64
+}
+
+func (q *Queries) ListensByTrackInRange(ctx context.Context, arg ListensByTrackInRangeParams) ([]ListensByTrackInRangeRow, error) {
+	rows, err := q.db.Query(ctx, listensByTrackInRange, arg.UserID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListensByTrackInRangeRow
+	for rows.Next() {
+		var i ListensByTrackInRangeRow
+		if err := rows.Scan(&i.TrackID, &i.ListenCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const ping = `-- name: Ping :exec

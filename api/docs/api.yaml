@@ -28,6 +28,8 @@ tags:
     description: User endpoints
   - name: Spotify
     description: Spotify endpoints
+  - name: Playlists
+    description: Playlist endpoints
 
 paths:
   /api/openapi.yaml:
@@ -389,8 +391,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Not Found - User or integration does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/playlists/monthly:
+    post:
+      summary: Create a monthly playlist from listening history
+      tags:
+        - Playlists
+      description: >
+        Creates a monthly playlist of at most 50 tracks
+        based on the given user's listening history.
+      parameters:
+        - $ref: "#/components/parameters/AccessTokenHeader"
+        - $ref: "#/components/parameters/CsrfTokenHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMonthlyPlaylistRequest"
+      responses:
+        "201":
+          description: Created Playlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePlaylistResponse"
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:
@@ -403,6 +454,18 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: No tracks listened within that month
           content:
             application/json:
               schema:
@@ -441,6 +504,45 @@ components:
       description: Refresh token
 
   schemas:
+    CreateMonthlyPlaylistRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        month:
+          type: string
+          enum:
+            - january
+            - february
+            - march
+            - april
+            - may
+            - june
+            - july
+            - august
+            - september
+            - october
+            - november
+            - december
+        year:
+          type: integer
+          minimum: 2026
+          maximum: 9999
+      required:
+        - user_id
+        - month
+        - year
+
+    CreatePlaylistResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+        - id
+
     SyncSpotifyTracksRequest:
       type: object
       properties:

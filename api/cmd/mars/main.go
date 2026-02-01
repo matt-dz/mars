@@ -17,6 +17,8 @@ import (
 	marslog "mars/internal/log"
 	"mars/internal/mars"
 	"mars/internal/setup"
+
+	_ "time/tzdata"
 )
 
 const (
@@ -50,7 +52,7 @@ func main() {
 }
 
 func run(ctx context.Context, logger *slog.Logger) error {
-	db, err := setup.Database(ctx)
+	db, pool, err := setup.Database(ctx)
 	if err != nil {
 		return fmt.Errorf("setting up database: %w", err)
 	}
@@ -68,6 +70,7 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	e := env.New()
 	e.Logger = logger
 	e.Database = db
+	e.Pool = pool
 	e.HTTP = marshttp.New()
 	e.HTTP.Logger = logger
 

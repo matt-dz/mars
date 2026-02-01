@@ -62,31 +62,31 @@ func AppSecret(env *env.Env) error {
 	return nil
 }
 
-func Database(ctx context.Context) (*database.Queries, error) {
+func Database(ctx context.Context) (*database.Queries, *pgxpool.Pool, error) {
 	databaseHost := os.Getenv("DATABASE_HOST")
 	if databaseHost == "" {
-		return nil, errors.New("DATABASE_HOST environment variable is required")
+		return nil, nil, errors.New("DATABASE_HOST environment variable is required")
 	}
 	databasePort := os.Getenv("DATABASE_PORT")
 	if databasePort == "" {
-		return nil, errors.New("DATABASE_PORT environment variable is required")
+		return nil, nil, errors.New("DATABASE_PORT environment variable is required")
 	}
 	databaseUser := os.Getenv("DATABASE_USER")
 	if databaseUser == "" {
-		return nil, errors.New("DATABASE_USER environment variable is required")
+		return nil, nil, errors.New("DATABASE_USER environment variable is required")
 	}
 	databasePassword := os.Getenv("DATABASE_PASSWORD")
 	if databasePassword == "" {
-		return nil, errors.New("DATABASE_PASSWORD environment variable is required")
+		return nil, nil, errors.New("DATABASE_PASSWORD environment variable is required")
 	}
 	databaseName := os.Getenv("DATABASE_NAME")
 	if databaseName == "" {
-		return nil, errors.New("DATABASE_NAME environment variable is required")
+		return nil, nil, errors.New("DATABASE_NAME environment variable is required")
 	}
 
 	poolConfig, err := pgxpool.ParseConfig("")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database config: %w", err)
+		return nil, nil, fmt.Errorf("failed to create database config: %w", err)
 	}
 
 	poolConfig.ConnConfig.Host = databaseHost
@@ -98,7 +98,7 @@ func Database(ctx context.Context) (*database.Queries, error) {
 		return uint16(p), nil
 	}()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	poolConfig.ConnConfig.User = databaseUser
 	poolConfig.ConnConfig.Password = databasePassword
@@ -107,18 +107,18 @@ func Database(ctx context.Context) (*database.Queries, error) {
 	// Creating DB connection
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create database connection: %w", err)
+		return nil, nil, fmt.Errorf("failed to create database connection: %w", err)
 	}
 
 	db := database.New(pool)
 	if err := db.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	if err := database.ApplySchema(ctx, pool); err != nil {
-		return nil, fmt.Errorf("failed to apply database schema: %w", err)
+		return nil, nil, fmt.Errorf("failed to apply database schema: %w", err)
 	}
 
-	return db, nil
+	return db, pool, nil
 }
 
 func Admin(ctx context.Context, db database.Querier, logger *slog.Logger) error {
