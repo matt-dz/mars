@@ -92,7 +92,7 @@ func run(ctx context.Context, logger *slog.Logger) error {
 
 // runSpotifyTokenRefresh waits a specified interval before refreshing all user spotify tokens.
 func runSpotifyTokenRefresh(ctx context.Context, logger *slog.Logger, client marshttp.Client, email, password string) {
-	ticker := time.NewTicker(time.Second * 15)
+	ticker := time.NewTicker(spotifyRefreshInterval)
 	defer ticker.Stop()
 
 	for {
