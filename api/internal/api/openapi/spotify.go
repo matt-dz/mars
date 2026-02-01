@@ -93,12 +93,12 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 				Artists []struct {
 					Name string `json:"name"`
 				} `json:"artists"`
-				ID   string `json:"id"`
-				Name string `json:"name"`
+				ID           string `json:"id"`
+				Name         string `json:"name"`
+				ExternalUrls struct {
+					Spotify string `json:"spotify"`
+				} `json:"external_urls"`
 			} `json:"track"`
-			ExternalUrls struct {
-				Spotify string `json:"spotify"`
-			} `json:"external_urls"`
 			PlayedAt time.Time `json:"played_at"`
 		} `json:"items"`
 	}
@@ -128,11 +128,11 @@ func (s Server) PostApiIntegrationsSpotifyTracksSync(
 		err = s.Env.Database.UpsertTrack(ctx, database.UpsertTrackParams{
 			ID:      item.Track.ID,
 			Name:    item.Track.Name,
-			Href:    item.ExternalUrls.Spotify,
+			Href:    item.Track.ExternalUrls.Spotify,
 			Artists: artists,
 			ImageUrl: pgtype.Text{
 				String: imageURL,
-				Valid:  imageURL == "",
+				Valid:  imageURL != "",
 			},
 		})
 		if err != nil {
