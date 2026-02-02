@@ -6,6 +6,7 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
 - [Development Setup](#development-setup)
 - [Environment Variables](#environment-variables)
 
@@ -24,14 +25,50 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 - **Database**: PostgreSQL 18
 - **Deployment**: Docker Compose
 
-## Development Setup
+## Quick Start
 
 ### Prerequisites
 
 - Docker & Docker Compose
 - Spotify Developer Account (for OAuth credentials)
 
-### Quick Start
+### Deployment
+
+1. Download the deployment files:
+```bash
+wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/docker-compose.yaml
+wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/fileserver.conf
+```
+
+2. Add your Spotify OAuth credentials for the api service:
+```txt
+environment:
+  SPOTIFY_CLIENT_ID: your_client_id
+  SPOTIFY_CLIENT_SECRET: your_client_secret
+  SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth/spotify/callback
+```
+
+3. Set the `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DATABASE_PASSWORD` for the api service. Ensure the passwords are secure.
+```txt
+environment:
+  DATABASE_PASSWORD: your_password
+  ADMIN_EMAIL: joe@mars.com
+  ADMIN_PASSWORD: secure-password
+```
+
+4. Start the environment:
+```bash
+docker compose up -d
+```
+
+5. Access the application:
+   - **Frontend**: http://localhost:8080
+   - **API**: http://localhost:8080/api
+   - **API Docs**: http://localhost:8080/docs
+
+## Development Setup
+
+For local development with hot-reloading:
 
 1. Clone the repository:
 ```bash
@@ -53,13 +90,13 @@ SPOTIFY_REDIRECT_URI=http://localhost:8080/api/oauth/spotify/callback
 
 4. Start the development environment:
 ```bash
-docker compose -f docker-compose.dev.yaml up -d
+docker compose -f docker-compose.dev.yaml up
 ```
 
-5. Access the application:
-   - **Frontend**: http://localhost:8080
-   - **API**: http://localhost:8080/api
-   - **API Docs**: http://localhost:8080/docs
+The development setup includes:
+- **Hot-reloading** for both frontend and backend
+- **Volume mounts** for live code updates
+- **Debug capabilities** with stdin/tty enabled
 
 ### Default Credentials
 
