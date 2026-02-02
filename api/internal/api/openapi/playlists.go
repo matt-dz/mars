@@ -108,8 +108,7 @@ func (s Server) PostApiPlaylists(
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := database.New(tx)
 
-	playlistName := fmt.Sprintf("[%c] %s %d, %d",
-		playlistType[0],
+	playlistName := fmt.Sprintf("%s %d, %d",
 		strings.ToLower(startDate.Month().String())[:3],
 		startDate.Day(),
 		startDate.Year())
