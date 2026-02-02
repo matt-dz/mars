@@ -128,4 +128,8 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+	::selection {
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+	}
 }

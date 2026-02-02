@@ -9,7 +9,7 @@
 <header class="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-lg">
 	<div class="container mx-auto flex h-16 items-center justify-between px-4">
 		<a
-			href={resolve('/')}
+			href={resolve('/home')}
 			class="group flex items-center gap-2 transition-opacity hover:opacity-80"
 		>
 			<div

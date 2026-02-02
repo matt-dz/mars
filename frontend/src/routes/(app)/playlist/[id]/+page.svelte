@@ -46,7 +46,7 @@
 <div class="container mx-auto max-w-4xl px-4 py-8">
 	<div class="mb-8">
 		<a
-			href={resolve('/')}
+			href={resolve('/home')}
 			class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
 		>
 			<svg
