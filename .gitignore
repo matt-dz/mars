@@ -3,3 +3,5 @@ dev/*
 
 .env
 .env.**
+!.env.backend.example
+!.env.frontend.example

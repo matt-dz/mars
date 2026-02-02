@@ -28,8 +28,8 @@ export async function getSpotifyAuthUrl() {
 	const baseUrl = 'https://accounts.spotify.com/authorize';
 	const params = new URLSearchParams({
 		response_type: 'code',
-		client_id: env.PUBLIC_SPOTIFY_CLIENT_ID,
-		redirect_uri: env.PUBLIC_SPOTIFY_REDIRECT_URI,
+		client_id: env.PUBLIC_SPOTIFY_CLIENT_ID ?? '',
+		redirect_uri: env.PUBLIC_SPOTIFY_REDIRECT_URI ?? '',
 		scope:
 			'user-read-private user-read-email user-library-read user-top-read user-read-recently-played playlist-modify-public playlist-modify-private ugc-image-upload',
 		state
