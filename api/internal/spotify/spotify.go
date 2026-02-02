@@ -83,3 +83,39 @@ func SyncTracks(ctx context.Context, client marshttp.Client, userid, accessToken
 
 	return nil
 }
+
+// CreatePlaylist sends a request to create a playlist on Spotify for a user.
+func CreatePlaylist(ctx context.Context, client marshttp.Client, userID, playlistID, accessToken, csrfToken string) error {
+	const endpoint = "http://localhost:8080/api/integrations/spotify/playlist"
+	body, err := json.Marshal(map[string]string{
+		"user_id":     userID,
+		"playlist_id": playlistID,
+	})
+	if err != nil {
+		return fmt.Errorf("marshaling body: %w", err)
+	}
+	req, err := retryablehttp.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Add("Cookie", fmt.Sprintf("access=%s; csrf=%s", accessToken, csrfToken))
+	req.Header.Add("X-CSRF-Token", csrfToken)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending request: %w", err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	// User does not have a spotify integration
+	if res.StatusCode == http.StatusNotFound {
+		return nil
+	}
+
+	if res.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("request failed with non-201 status: status=%d body=%s", res.StatusCode, string(body))
+	}
+
+	return nil
+}

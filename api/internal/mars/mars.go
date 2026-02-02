@@ -188,12 +188,14 @@ func CreatePlaylist(ctx context.Context, client marshttp.Client,
 				mtx.Lock()
 				errs = append(errs, fmt.Errorf("marshaling body for user (%s): %w", id, err))
 				mtx.Unlock()
+				return
 			}
 			req, err := retryablehttp.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
 			if err != nil {
 				mtx.Lock()
 				errs = append(errs, fmt.Errorf("creating request for user (%s): %w", id, err))
 				mtx.Unlock()
+				return
 			}
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("X-CSRF-Token", csrfToken)
@@ -205,6 +207,7 @@ func CreatePlaylist(ctx context.Context, client marshttp.Client,
 				mtx.Lock()
 				errs = append(errs, fmt.Errorf("sending request for user (%s): %w", id, err))
 				mtx.Unlock()
+				return
 			}
 			defer func() { _ = res.Body.Close() }()
 			// No tracks listened to, this is fine.
@@ -217,6 +220,26 @@ func CreatePlaylist(ctx context.Context, client marshttp.Client,
 				errs = append(errs,
 					fmt.Errorf("request failed with non-201 status: status=%d body=\"%s\"", res.StatusCode, string(body)))
 				mtx.Unlock()
+				return
+			}
+
+			// Parse playlist ID from response
+			var respBody struct {
+				ID string `json:"id"`
+			}
+			if err := json.NewDecoder(res.Body).Decode(&respBody); err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("decoding response for user (%s): %w", id, err))
+				mtx.Unlock()
+				return
+			}
+
+			// Create playlist on Spotify
+			if err := spotify.CreatePlaylist(ctx, client, id, respBody.ID, accessToken, csrfToken); err != nil {
+				mtx.Lock()
+				errs = append(errs, fmt.Errorf("creating spotify playlist for user (%s): %w", id, err))
+				mtx.Unlock()
+				return
 			}
 		})
 	}
