@@ -1,4 +1,3 @@
-import { env } from '$env/dynamic/public';
 import fetchFn from '@/http';
 import * as z from 'zod';
 
@@ -25,17 +24,17 @@ function getState(): string | null {
 }
 
 const OAuthSchema = z.object({
-	response_type: z.literal("code"),
+	response_type: z.literal('code'),
 	client_id: z.string(),
 	redirect_uri: z.string(),
-	scope: z.string(),
-})
+	scope: z.string()
+});
 
 // TODO: refactor this to pull from backend
 export async function getSpotifyAuthUrl() {
 	// Fetch config
-	const res = await fetchFn('/api/oauth/spotify/config.json')
-	const schema = OAuthSchema.parse(await res.json())
+	const res = await fetchFn('/api/oauth/spotify/config.json');
+	const schema = OAuthSchema.parse(await res.json());
 
 	// Redirect to auth
 	const state = createAndStoreState();

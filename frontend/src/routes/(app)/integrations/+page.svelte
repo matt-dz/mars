@@ -125,12 +125,7 @@
 		<Card.Footer class="border-t bg-muted/30 pt-4">
 			{#if data.spotifyStatus.connected}
 				<div class="flex gap-2">
-					<Button
-						variant="outline"
-						onclick={handleConnect}
-						disabled={isConnecting}
-						class="gap-2"
-					>
+					<Button variant="outline" onclick={handleConnect} disabled={isConnecting} class="gap-2">
 						{#if isConnecting}
 							<svg
 								class="h-4 w-4 animate-spin"
