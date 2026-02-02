@@ -147,6 +147,14 @@ type RefreshToken struct {
 // Role defines model for Role.
 type Role string
 
+// SpotifyOAuth defines model for SpotifyOAuth.
+type SpotifyOAuth struct {
+	ClientId     string `json:"client_id"`
+	RedirectUri  string `json:"redirect_uri"`
+	ResponseType string `json:"response_type"`
+	Scope        string `json:"scope"`
+}
+
 // SpotifyPlaylist defines model for SpotifyPlaylist.
 type SpotifyPlaylist struct {
 	Id  string `json:"id"`
@@ -469,6 +477,9 @@ type ClientInterface interface {
 	// GetApiMePlaylists request
 	GetApiMePlaylists(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApiOauthSpotifyConfigJson request
+	GetApiOauthSpotifyConfigJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiOauthSpotifyTokenWithBody request with any body
 	PostApiOauthSpotifyTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -631,6 +642,18 @@ func (c *Client) PostApiLogin(ctx context.Context, body PostApiLoginJSONRequestB
 
 func (c *Client) GetApiMePlaylists(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiMePlaylistsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiOauthSpotifyConfigJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiOauthSpotifyConfigJsonRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1220,6 +1243,33 @@ func NewGetApiMePlaylistsRequest(server string, params *GetApiMePlaylistsParams)
 	return req, nil
 }
 
+// NewGetApiOauthSpotifyConfigJsonRequest generates requests for GetApiOauthSpotifyConfigJson
+func NewGetApiOauthSpotifyConfigJsonRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/oauth/spotify/config.json")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPostApiOauthSpotifyTokenRequest calls the generic PostApiOauthSpotifyToken builder with application/json body
 func NewPostApiOauthSpotifyTokenRequest(server string, body PostApiOauthSpotifyTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1650,6 +1700,9 @@ type ClientWithResponsesInterface interface {
 	// GetApiMePlaylistsWithResponse request
 	GetApiMePlaylistsWithResponse(ctx context.Context, params *GetApiMePlaylistsParams, reqEditors ...RequestEditorFn) (*GetApiMePlaylistsResponse, error)
 
+	// GetApiOauthSpotifyConfigJsonWithResponse request
+	GetApiOauthSpotifyConfigJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOauthSpotifyConfigJsonResponse, error)
+
 	// PostApiOauthSpotifyTokenWithBodyWithResponse request with any body
 	PostApiOauthSpotifyTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiOauthSpotifyTokenResponse, error)
 
@@ -1869,6 +1922,29 @@ func (r GetApiMePlaylistsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetApiMePlaylistsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiOauthSpotifyConfigJsonResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SpotifyOAuth
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiOauthSpotifyConfigJsonResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiOauthSpotifyConfigJsonResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2151,6 +2227,15 @@ func (c *ClientWithResponses) GetApiMePlaylistsWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetApiMePlaylistsResponse(rsp)
+}
+
+// GetApiOauthSpotifyConfigJsonWithResponse request returning *GetApiOauthSpotifyConfigJsonResponse
+func (c *ClientWithResponses) GetApiOauthSpotifyConfigJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiOauthSpotifyConfigJsonResponse, error) {
+	rsp, err := c.GetApiOauthSpotifyConfigJson(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiOauthSpotifyConfigJsonResponse(rsp)
 }
 
 // PostApiOauthSpotifyTokenWithBodyWithResponse request with arbitrary body returning *PostApiOauthSpotifyTokenResponse
@@ -2595,6 +2680,39 @@ func ParseGetApiMePlaylistsResponse(rsp *http.Response) (*GetApiMePlaylistsRespo
 	return response, nil
 }
 
+// ParseGetApiOauthSpotifyConfigJsonResponse parses an HTTP response from a GetApiOauthSpotifyConfigJsonWithResponse call
+func ParseGetApiOauthSpotifyConfigJsonResponse(rsp *http.Response) (*GetApiOauthSpotifyConfigJsonResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiOauthSpotifyConfigJsonResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SpotifyOAuth
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParsePostApiOauthSpotifyTokenResponse parses an HTTP response from a PostApiOauthSpotifyTokenWithResponse call
 func ParsePostApiOauthSpotifyTokenResponse(rsp *http.Response) (*PostApiOauthSpotifyTokenResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -2943,6 +3061,9 @@ type ServerInterface interface {
 	// Get personal playlists
 	// (GET /api/me/playlists)
 	GetApiMePlaylists(w http.ResponseWriter, r *http.Request, params GetApiMePlaylistsParams)
+	// Get Spotify OAuth2.0 configuration.
+	// (GET /api/oauth/spotify/config.json)
+	GetApiOauthSpotifyConfigJson(w http.ResponseWriter, r *http.Request)
 	// Get Spotify OAuth2.0 tokens.
 	// (POST /api/oauth/spotify/token)
 	PostApiOauthSpotifyToken(w http.ResponseWriter, r *http.Request)
@@ -3015,6 +3136,12 @@ func (_ Unimplemented) PostApiLogin(w http.ResponseWriter, r *http.Request) {
 // Get personal playlists
 // (GET /api/me/playlists)
 func (_ Unimplemented) GetApiMePlaylists(w http.ResponseWriter, r *http.Request, params GetApiMePlaylistsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get Spotify OAuth2.0 configuration.
+// (GET /api/oauth/spotify/config.json)
+func (_ Unimplemented) GetApiOauthSpotifyConfigJson(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3423,6 +3550,20 @@ func (siw *ServerInterfaceWrapper) GetApiMePlaylists(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetApiMePlaylists(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetApiOauthSpotifyConfigJson operation middleware
+func (siw *ServerInterfaceWrapper) GetApiOauthSpotifyConfigJson(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApiOauthSpotifyConfigJson(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3843,6 +3984,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/me/playlists", wrapper.GetApiMePlaylists)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/oauth/spotify/config.json", wrapper.GetApiOauthSpotifyConfigJson)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/oauth/spotify/token", wrapper.PostApiOauthSpotifyToken)
 	})
 	r.Group(func(r chi.Router) {
@@ -4227,6 +4371,31 @@ func (response GetApiMePlaylists500JSONResponse) VisitGetApiMePlaylistsResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetApiOauthSpotifyConfigJsonRequestObject struct {
+}
+
+type GetApiOauthSpotifyConfigJsonResponseObject interface {
+	VisitGetApiOauthSpotifyConfigJsonResponse(w http.ResponseWriter) error
+}
+
+type GetApiOauthSpotifyConfigJson200JSONResponse SpotifyOAuth
+
+func (response GetApiOauthSpotifyConfigJson200JSONResponse) VisitGetApiOauthSpotifyConfigJsonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiOauthSpotifyConfigJson500JSONResponse Error
+
+func (response GetApiOauthSpotifyConfigJson500JSONResponse) VisitGetApiOauthSpotifyConfigJsonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PostApiOauthSpotifyTokenRequestObject struct {
 	Body *PostApiOauthSpotifyTokenJSONRequestBody
 }
@@ -4579,6 +4748,9 @@ type StrictServerInterface interface {
 	// Get personal playlists
 	// (GET /api/me/playlists)
 	GetApiMePlaylists(ctx context.Context, request GetApiMePlaylistsRequestObject) (GetApiMePlaylistsResponseObject, error)
+	// Get Spotify OAuth2.0 configuration.
+	// (GET /api/oauth/spotify/config.json)
+	GetApiOauthSpotifyConfigJson(ctx context.Context, request GetApiOauthSpotifyConfigJsonRequestObject) (GetApiOauthSpotifyConfigJsonResponseObject, error)
 	// Get Spotify OAuth2.0 tokens.
 	// (POST /api/oauth/spotify/token)
 	PostApiOauthSpotifyToken(ctx context.Context, request PostApiOauthSpotifyTokenRequestObject) (PostApiOauthSpotifyTokenResponseObject, error)
@@ -4857,6 +5029,30 @@ func (sh *strictHandler) GetApiMePlaylists(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetApiMePlaylistsResponseObject); ok {
 		if err := validResponse.VisitGetApiMePlaylistsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetApiOauthSpotifyConfigJson operation middleware
+func (sh *strictHandler) GetApiOauthSpotifyConfigJson(w http.ResponseWriter, r *http.Request) {
+	var request GetApiOauthSpotifyConfigJsonRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiOauthSpotifyConfigJson(ctx, request.(GetApiOauthSpotifyConfigJsonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiOauthSpotifyConfigJson")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetApiOauthSpotifyConfigJsonResponseObject); ok {
+		if err := validResponse.VisitGetApiOauthSpotifyConfigJsonResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

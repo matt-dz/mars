@@ -69,6 +69,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/oauth/spotify/config.json:
+    get:
+      summary: Get Spotify OAuth2.0 configuration.
+      security: []
+      tags:
+        - OAuth
+      responses:
+        "200":
+          description: Spotify OAuth2.0 configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotifyOAuth"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /api/login:
     post:
       tags:
@@ -712,6 +732,23 @@ components:
       description: Refresh token
 
   schemas:
+    SpotifyOAuth:
+      type: object
+      properties:
+        response_type:
+          type: string
+        client_id:
+          type: string
+        redirect_uri:
+          type: string
+        scope:
+          type: string
+      required:
+        - response_type
+        - client_id
+        - redirect_uri
+        - scope
+
     CreatePlaylistRequest:
       type: object
       properties:

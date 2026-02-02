@@ -413,3 +413,41 @@ func (s Server) PostApiOauthSpotifyTokenRefresh(
 
 	return PostApiOauthSpotifyTokenRefresh204Response{}, nil
 }
+
+func (s Server) GetApiOauthSpotifyConfigJson(
+	ctx context.Context, request GetApiOauthSpotifyConfigJsonRequestObject) (
+	GetApiOauthSpotifyConfigJsonResponseObject, error,
+) {
+	reqid := requestid.FromContext(ctx)
+	clientid := os.Getenv("SPOTIFY_CLIENT_ID")
+	redirectURI := os.Getenv("SPOTIFY_REDIRECT_URI")
+
+	if clientid == "" {
+		s.Env.Logger.ErrorContext(ctx, "SPOTIFY_CLIENT_ID not set")
+		return GetApiOauthSpotifyConfigJson500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	if redirectURI == "" {
+		s.Env.Logger.ErrorContext(ctx, "SPOTIFY_REDIRECT_URI not set")
+		return GetApiOauthSpotifyConfigJson500JSONResponse{
+			Message: "internal server error",
+			Status:  apierror.InternalServerError.Status(),
+			Code:    apierror.InternalServerError.String(),
+			ErrorId: reqid,
+		}, nil
+	}
+
+	return GetApiOauthSpotifyConfigJson200JSONResponse{
+		ResponseType: "code",
+		ClientId:     clientid,
+		RedirectUri:  redirectURI,
+		Scope: "user-read-private user-read-email user-library-read " +
+			"user-top-read user-read-recently-played playlist-modify-public " +
+			"playlist-modify-private ugc-image-upload",
+	}, nil
+}

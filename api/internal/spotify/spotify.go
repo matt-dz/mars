@@ -85,7 +85,9 @@ func SyncTracks(ctx context.Context, client marshttp.Client, userid, accessToken
 }
 
 // CreatePlaylist sends a request to create a playlist on Spotify for a user.
-func CreatePlaylist(ctx context.Context, client marshttp.Client, userID, playlistID, accessToken, csrfToken string) error {
+func CreatePlaylist(
+	ctx context.Context, client marshttp.Client, userID, playlistID, accessToken, csrfToken string,
+) error {
 	const endpoint = "http://localhost:8080/api/integrations/spotify/playlist"
 	body, err := json.Marshal(map[string]string{
 		"user_id":     userID,
