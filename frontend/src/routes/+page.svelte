@@ -3,6 +3,10 @@
 	import { resolve } from '$app/paths';
 </script>
 
+<svelte:head>
+	<title>Mars - Your listening history, beautifully organized</title>
+</svelte:head>
+
 <div class="flex min-h-screen flex-col">
 	<!-- Navigation -->
 	<header class="border-b border-border/40 bg-background/80 backdrop-blur-sm">

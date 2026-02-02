@@ -28,6 +28,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Integrations - Mars</title>
+</svelte:head>
+
 <div class="container mx-auto max-w-2xl px-4 py-8">
 	<div class="mb-8">
 		<a
