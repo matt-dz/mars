@@ -32,7 +32,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 	} catch (e) {
 		console.error(e);
 	} finally {
-		redirect(303, resolve('/integrations'));
+		redirect(302, resolve('/integrations'));
 	}
 };
 

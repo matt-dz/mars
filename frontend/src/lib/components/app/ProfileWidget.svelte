@@ -12,8 +12,7 @@
 	}
 
 	async function handleLogout() {
-		await fetch('/api/logout', { method: 'POST' });
-		goto(resolve('/login'));
+		goto(resolve('/logout'));
 	}
 </script>
 

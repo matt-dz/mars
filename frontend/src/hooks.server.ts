@@ -15,10 +15,10 @@ import {
 } from '@/auth';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/api/'];
+const PUBLIC_ROUTES = ['/login', '/'];
 
 function isPublicRoute(pathname: string): boolean {
-	return PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route));
+	return PUBLIC_ROUTES.some((route) => pathname === route);
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
