@@ -36,8 +36,6 @@ services:
     restart: unless-stopped
     environment:
       PUBLIC_API_URL: http://mars-api:8080
-      PUBLIC_SPOTIFY_CLIENT_ID: client_id
-      PUBLIC_SPOTIFY_REDIRECT_URI: http://127.0.0.1:8080/oauth/spotify
 
   database:
     image: postgres:18

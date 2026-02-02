@@ -1,4 +1,6 @@
 import { env } from '$env/dynamic/public';
+import fetchFn from '@/http';
+import * as z from 'zod';
 
 function randomBase64Url(bytes: number) {
 	const arr = new Uint8Array(bytes);
@@ -22,16 +24,27 @@ function getState(): string | null {
 	return localStorage.getItem('state');
 }
 
+const OAuthSchema = z.object({
+	response_type: z.literal("code"),
+	client_id: z.string(),
+	redirect_uri: z.string(),
+	scope: z.string(),
+})
+
 // TODO: refactor this to pull from backend
 export async function getSpotifyAuthUrl() {
+	// Fetch config
+	const res = await fetchFn('/api/oauth/spotify/config.json')
+	const schema = OAuthSchema.parse(await res.json())
+
+	// Redirect to auth
 	const state = createAndStoreState();
 	const baseUrl = 'https://accounts.spotify.com/authorize';
 	const params = new URLSearchParams({
-		response_type: 'code',
-		client_id: env.PUBLIC_SPOTIFY_CLIENT_ID ?? '',
-		redirect_uri: env.PUBLIC_SPOTIFY_REDIRECT_URI ?? '',
-		scope:
-			'user-read-private user-read-email user-library-read user-top-read user-read-recently-played playlist-modify-public playlist-modify-private ugc-image-upload',
+		response_type: schema.response_type,
+		client_id: schema.client_id,
+		redirect_uri: schema.redirect_uri,
+		scope: schema.scope,
 		state
 	});
 	window.location.href = `${baseUrl}?${params.toString()}`;
