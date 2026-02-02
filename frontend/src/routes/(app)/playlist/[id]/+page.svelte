@@ -16,8 +16,9 @@
 		message = null;
 
 		try {
-			await addPlaylistToSpotify(data.playlist.id);
+			const playlist = await addPlaylistToSpotify(data.playlist.id);
 			message = { type: 'success', text: 'Playlist added to Spotify!' };
+			window.open(playlist.url, '_blank', 'noopener,noreferrer');
 		} catch {
 			message = { type: 'error', text: 'Failed to add playlist to Spotify.' };
 		} finally {
@@ -105,7 +106,12 @@
 					</span>
 				</div>
 			</div>
-			<Button onclick={handleAddToSpotify} disabled={isAddingToSpotify} size="lg" class="gap-2">
+			<Button
+				onclick={handleAddToSpotify}
+				disabled={isAddingToSpotify}
+				size="lg"
+				class="cursor-pointer gap-2"
+			>
 				{#if isAddingToSpotify}
 					<svg
 						class="h-4 w-4 animate-spin"

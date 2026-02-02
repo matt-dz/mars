@@ -22,8 +22,7 @@ import * as setCookie from 'set-cookie-parser';
 
 const retryCodes = [408, 413, 429, 500, 502, 503, 504];
 
-function getPrefixUrl(): string {
-	if (browser) return '';
+export function getPrefixUrl(): string {
 	return env.PUBLIC_API_URL ?? '';
 }
 
@@ -214,7 +213,6 @@ function createRefreshHooks(kyInstance: KyInstance) {
 }
 
 const baseOptions: Options = {
-	prefixUrl: getPrefixUrl(),
 	timeout: 15 * 1000,
 	retry: {
 		retryOnTimeout: true,
@@ -235,8 +233,13 @@ const baseOptions: Options = {
 // Create base instance without refresh hooks first
 const fetchFn = ky.create(baseOptions);
 
-export function wrap(customFetch: typeof fetch): KyInstance {
-	return fetchFn.extend({ fetch: customFetch });
+const serverFetchFn = ky.create({
+	...baseOptions,
+	prefixUrl: getPrefixUrl()
+});
+
+export function wrapServer(customFetch: typeof fetch): KyInstance {
+	return serverFetchFn.extend({ fetch: customFetch });
 }
 
 export function wrapWithRefreshHook(customFetch: typeof fetch): KyInstance {
@@ -250,7 +253,7 @@ export function wrapWithRefreshHook(customFetch: typeof fetch): KyInstance {
 		});
 	}
 
-	return fetchFn.extend({
+	return serverFetchFn.extend({
 		fetch: customFetch
 	});
 }
@@ -261,7 +264,7 @@ export function wrapWithCredentials(
 	refreshToken: string,
 	csrfToken: string | null = ''
 ): KyInstance {
-	return wrap(customFetch).extend({
+	return wrapServer(customFetch).extend({
 		headers: {
 			...baseOptions.headers,
 			Cookie: `${ACCESS_TOKEN_COOKIE_NAME}=${accessToken}; ${REFRESH_TOKEN_COOKIE_NAME}=${refreshToken}; ${CSRF_TOKEN_COOKIE_NAME}=${csrfToken}`
@@ -289,3 +292,4 @@ type FetchFn = typeof fetchFn;
 export type { FetchFn };
 export { baseOptions };
 export default fetchFn;
+export { serverFetchFn };

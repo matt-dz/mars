@@ -3,8 +3,10 @@ import {
 	ApiErrorSchema,
 	PlaylistsSchema,
 	PlaylistWithTracksSchema,
+	SpotifyPlaylistSchema,
 	type Playlists,
-	type PlaylistWithTracks
+	type PlaylistWithTracks,
+	type SpotifyPlaylist
 } from './types';
 import fetchFn, { type FetchFn } from '@/http';
 import { HTTPError } from './errors';
@@ -44,11 +46,21 @@ export async function getPlaylist(
 	}
 }
 
-export async function addPlaylistToSpotify(id: string, fetch: FetchFn = fetchFn): Promise<void> {
-	// TODO: Replace with real API call when backend is ready
-	// const response = await fetchFn(`/api/playlists/${id}/spotify`, { method: 'POST' });
-	// if (!response.ok) throw await response.json();
-
-	void fetch; // Suppress unused variable warning for now
-	console.log(`Adding playlist ${id} to Spotify (mock)`);
+export async function addPlaylistToSpotify(
+	id: string,
+	fetch: FetchFn = fetchFn
+): Promise<SpotifyPlaylist> {
+	try {
+		const res = await fetch.post(`/api/integrations/spotify/playlist/${id}`).json();
+		return SpotifyPlaylistSchema.parse(res);
+	} catch (e) {
+		if (isHTTPError(e)) {
+			const err = ApiErrorSchema.safeParse(await e.response.clone().json());
+			if (err.success) {
+				throw new HTTPError(err.data.status, err.data.message, err.data.code, err.data.error_id);
+			}
+			throw new HTTPError(e.response.status, await e.response.text());
+		}
+		throw e;
+	}
 }

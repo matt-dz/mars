@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 import { stateMatches } from '$lib/oauth';
 import { getSpotifyTokens } from '@/api';
 import { resolve } from '$app/paths';
-import { wrap } from '@/http';
+import fetchFn from '@/http';
 import { redirect } from '@sveltejs/kit';
 
 export const load: PageLoad = async ({ url, fetch }) => {
@@ -28,7 +28,7 @@ export const load: PageLoad = async ({ url, fetch }) => {
 	}
 
 	try {
-		await getSpotifyTokens(code, wrap(fetch));
+		await getSpotifyTokens(code, fetchFn.extend({ fetch }));
 	} catch (e) {
 		console.error(e);
 	} finally {

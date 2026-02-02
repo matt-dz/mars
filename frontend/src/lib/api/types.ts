@@ -48,3 +48,10 @@ export type SpotifyStatus = z.infer<typeof SpotifyStatusSchema>;
 
 // Re-export error types from errors.ts for backwards compatibility
 export { ApiErrorSchema, type ApiError } from './errors';
+
+export const SpotifyPlaylistSchema = z.object({
+	id: z.string(),
+	url: z.string()
+});
+
+export type SpotifyPlaylist = z.infer<typeof SpotifyPlaylistSchema>;
