@@ -142,6 +142,7 @@ func (m Middleware) OAPIAuthFunc(ctx context.Context, input *openapi3filter.Auth
 	adminRoutes := []string{
 		"/api/oauth/spotify/token/refresh",
 		"/api/integrations/spotify/tracks/sync",
+		"/api/integrations/spotify/playlist",
 		"/api/users",
 	}
 	reqid := requestid.FromContext(ctx)

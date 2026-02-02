@@ -225,6 +225,15 @@ type PostApiIntegrationsSpotifyPlaylistParams struct {
 	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
 }
 
+// PostApiIntegrationsSpotifyPlaylistIdParams defines parameters for PostApiIntegrationsSpotifyPlaylistId.
+type PostApiIntegrationsSpotifyPlaylistIdParams struct {
+	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
+	XCSRFToken *CsrfTokenHeader `json:"X-CSRF-Token,omitempty"`
+
+	// Access Access token
+	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
+}
+
 // PostApiIntegrationsSpotifyTracksSyncParams defines parameters for PostApiIntegrationsSpotifyTracksSync.
 type PostApiIntegrationsSpotifyTracksSyncParams struct {
 	// XCSRFToken CSRF token required when authenticating via cookies. Must match the CSRF cookie value.
@@ -444,6 +453,9 @@ type ClientInterface interface {
 
 	PostApiIntegrationsSpotifyPlaylist(ctx context.Context, params *PostApiIntegrationsSpotifyPlaylistParams, body PostApiIntegrationsSpotifyPlaylistJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiIntegrationsSpotifyPlaylistId request
+	PostApiIntegrationsSpotifyPlaylistId(ctx context.Context, id openapi_types.UUID, params *PostApiIntegrationsSpotifyPlaylistIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiIntegrationsSpotifyTracksSyncWithBody request with any body
 	PostApiIntegrationsSpotifyTracksSyncWithBody(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -547,6 +559,18 @@ func (c *Client) PostApiIntegrationsSpotifyPlaylistWithBody(ctx context.Context,
 
 func (c *Client) PostApiIntegrationsSpotifyPlaylist(ctx context.Context, params *PostApiIntegrationsSpotifyPlaylistParams, body PostApiIntegrationsSpotifyPlaylistJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiIntegrationsSpotifyPlaylistRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiIntegrationsSpotifyPlaylistId(ctx context.Context, id openapi_types.UUID, params *PostApiIntegrationsSpotifyPlaylistIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiIntegrationsSpotifyPlaylistIdRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -938,6 +962,72 @@ func NewPostApiIntegrationsSpotifyPlaylistRequestWithBody(server string, params 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XCSRFToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithLocation("simple", false, "X-CSRF-Token", runtime.ParamLocationHeader, *params.XCSRFToken)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-CSRF-Token", headerParam0)
+		}
+
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
+}
+
+// NewPostApiIntegrationsSpotifyPlaylistIdRequest generates requests for PostApiIntegrationsSpotifyPlaylistId
+func NewPostApiIntegrationsSpotifyPlaylistIdRequest(server string, id openapi_types.UUID, params *PostApiIntegrationsSpotifyPlaylistIdParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/integrations/spotify/playlist/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if params != nil {
 
@@ -1544,6 +1634,9 @@ type ClientWithResponsesInterface interface {
 
 	PostApiIntegrationsSpotifyPlaylistWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyPlaylistParams, body PostApiIntegrationsSpotifyPlaylistJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyPlaylistResponse, error)
 
+	// PostApiIntegrationsSpotifyPlaylistIdWithResponse request
+	PostApiIntegrationsSpotifyPlaylistIdWithResponse(ctx context.Context, id openapi_types.UUID, params *PostApiIntegrationsSpotifyPlaylistIdParams, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyPlaylistIdResponse, error)
+
 	// PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse request with any body
 	PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error)
 
@@ -1676,6 +1769,32 @@ func (r PostApiIntegrationsSpotifyPlaylistResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostApiIntegrationsSpotifyPlaylistResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiIntegrationsSpotifyPlaylistIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *SpotifyPlaylist
+	JSON401      *Error
+	JSON403      *Error
+	JSON404      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiIntegrationsSpotifyPlaylistIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiIntegrationsSpotifyPlaylistIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1982,6 +2101,15 @@ func (c *ClientWithResponses) PostApiIntegrationsSpotifyPlaylistWithResponse(ctx
 	return ParsePostApiIntegrationsSpotifyPlaylistResponse(rsp)
 }
 
+// PostApiIntegrationsSpotifyPlaylistIdWithResponse request returning *PostApiIntegrationsSpotifyPlaylistIdResponse
+func (c *ClientWithResponses) PostApiIntegrationsSpotifyPlaylistIdWithResponse(ctx context.Context, id openapi_types.UUID, params *PostApiIntegrationsSpotifyPlaylistIdParams, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyPlaylistIdResponse, error) {
+	rsp, err := c.PostApiIntegrationsSpotifyPlaylistId(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiIntegrationsSpotifyPlaylistIdResponse(rsp)
+}
+
 // PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse request with arbitrary body returning *PostApiIntegrationsSpotifyTracksSyncResponse
 func (c *ClientWithResponses) PostApiIntegrationsSpotifyTracksSyncWithBodyWithResponse(ctx context.Context, params *PostApiIntegrationsSpotifyTracksSyncParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiIntegrationsSpotifyTracksSyncResponse, error) {
 	rsp, err := c.PostApiIntegrationsSpotifyTracksSyncWithBody(ctx, params, contentType, body, reqEditors...)
@@ -2234,6 +2362,60 @@ func ParsePostApiIntegrationsSpotifyPlaylistResponse(rsp *http.Response) (*PostA
 	}
 
 	response := &PostApiIntegrationsSpotifyPlaylistResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SpotifyPlaylist
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiIntegrationsSpotifyPlaylistIdResponse parses an HTTP response from a PostApiIntegrationsSpotifyPlaylistIdWithResponse call
+func ParsePostApiIntegrationsSpotifyPlaylistIdResponse(rsp *http.Response) (*PostApiIntegrationsSpotifyPlaylistIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiIntegrationsSpotifyPlaylistIdResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2749,6 +2931,9 @@ type ServerInterface interface {
 	// Create a spotify playlist based on a mars playlist for a user.
 	// (POST /api/integrations/spotify/playlist)
 	PostApiIntegrationsSpotifyPlaylist(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyPlaylistParams)
+	// Create a personal spotify playlist based on mars playlist.
+	// (POST /api/integrations/spotify/playlist/{id})
+	PostApiIntegrationsSpotifyPlaylistId(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params PostApiIntegrationsSpotifyPlaylistIdParams)
 	// Sync recent spotify tracks
 	// (POST /api/integrations/spotify/tracks/sync)
 	PostApiIntegrationsSpotifyTracksSync(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyTracksSyncParams)
@@ -2806,6 +2991,12 @@ func (_ Unimplemented) GetApiHealth(w http.ResponseWriter, r *http.Request) {
 // Create a spotify playlist based on a mars playlist for a user.
 // (POST /api/integrations/spotify/playlist)
 func (_ Unimplemented) PostApiIntegrationsSpotifyPlaylist(w http.ResponseWriter, r *http.Request, params PostApiIntegrationsSpotifyPlaylistParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a personal spotify playlist based on mars playlist.
+// (POST /api/integrations/spotify/playlist/{id})
+func (_ Unimplemented) PostApiIntegrationsSpotifyPlaylistId(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params PostApiIntegrationsSpotifyPlaylistIdParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3047,6 +3238,76 @@ func (siw *ServerInterfaceWrapper) PostApiIntegrationsSpotifyPlaylist(w http.Res
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostApiIntegrationsSpotifyPlaylist(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostApiIntegrationsSpotifyPlaylistId operation middleware
+func (siw *ServerInterfaceWrapper) PostApiIntegrationsSpotifyPlaylistId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostApiIntegrationsSpotifyPlaylistIdParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfTokenHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value AccessTokenHeader
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostApiIntegrationsSpotifyPlaylistId(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3570,6 +3831,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/integrations/spotify/playlist", wrapper.PostApiIntegrationsSpotifyPlaylist)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/integrations/spotify/playlist/{id}", wrapper.PostApiIntegrationsSpotifyPlaylistId)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/integrations/spotify/tracks/sync", wrapper.PostApiIntegrationsSpotifyTracksSync)
 	})
 	r.Group(func(r chi.Router) {
@@ -3763,6 +4027,60 @@ func (response PostApiIntegrationsSpotifyPlaylist404JSONResponse) VisitPostApiIn
 type PostApiIntegrationsSpotifyPlaylist500JSONResponse Error
 
 func (response PostApiIntegrationsSpotifyPlaylist500JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyPlaylistIdRequestObject struct {
+	Id     openapi_types.UUID `json:"id"`
+	Params PostApiIntegrationsSpotifyPlaylistIdParams
+}
+
+type PostApiIntegrationsSpotifyPlaylistIdResponseObject interface {
+	VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error
+}
+
+type PostApiIntegrationsSpotifyPlaylistId201JSONResponse SpotifyPlaylist
+
+func (response PostApiIntegrationsSpotifyPlaylistId201JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyPlaylistId401JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyPlaylistId401JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyPlaylistId403JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyPlaylistId403JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyPlaylistId404JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyPlaylistId404JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostApiIntegrationsSpotifyPlaylistId500JSONResponse Error
+
+func (response PostApiIntegrationsSpotifyPlaylistId500JSONResponse) VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -4249,6 +4567,9 @@ type StrictServerInterface interface {
 	// Create a spotify playlist based on a mars playlist for a user.
 	// (POST /api/integrations/spotify/playlist)
 	PostApiIntegrationsSpotifyPlaylist(ctx context.Context, request PostApiIntegrationsSpotifyPlaylistRequestObject) (PostApiIntegrationsSpotifyPlaylistResponseObject, error)
+	// Create a personal spotify playlist based on mars playlist.
+	// (POST /api/integrations/spotify/playlist/{id})
+	PostApiIntegrationsSpotifyPlaylistId(ctx context.Context, request PostApiIntegrationsSpotifyPlaylistIdRequestObject) (PostApiIntegrationsSpotifyPlaylistIdResponseObject, error)
 	// Sync recent spotify tracks
 	// (POST /api/integrations/spotify/tracks/sync)
 	PostApiIntegrationsSpotifyTracksSync(ctx context.Context, request PostApiIntegrationsSpotifyTracksSyncRequestObject) (PostApiIntegrationsSpotifyTracksSyncResponseObject, error)
@@ -4419,6 +4740,33 @@ func (sh *strictHandler) PostApiIntegrationsSpotifyPlaylist(w http.ResponseWrite
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostApiIntegrationsSpotifyPlaylistResponseObject); ok {
 		if err := validResponse.VisitPostApiIntegrationsSpotifyPlaylistResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostApiIntegrationsSpotifyPlaylistId operation middleware
+func (sh *strictHandler) PostApiIntegrationsSpotifyPlaylistId(w http.ResponseWriter, r *http.Request, id openapi_types.UUID, params PostApiIntegrationsSpotifyPlaylistIdParams) {
+	var request PostApiIntegrationsSpotifyPlaylistIdRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostApiIntegrationsSpotifyPlaylistId(ctx, request.(PostApiIntegrationsSpotifyPlaylistIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostApiIntegrationsSpotifyPlaylistId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostApiIntegrationsSpotifyPlaylistIdResponseObject); ok {
+		if err := validResponse.VisitPostApiIntegrationsSpotifyPlaylistIdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -635,6 +635,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/integrations/spotify/playlist/{id}:
+    post:
+      summary: Create a personal spotify playlist based on mars playlist.
+      tags:
+        - Spotify
+      description: >
+        Create a personal spotify playlist from a mars playlist. The
+        requesting user must have a spotify integration.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Playlist ID
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/AccessTokenHeader"
+        - $ref: "#/components/parameters/CsrfTokenHeader"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpotifyPlaylist"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found - User does not have a spotify integration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   parameters:
     AccessTokenHeader:
