@@ -1,4 +1,4 @@
-import { PUBLIC_SPOTIFY_CLIENT_ID, PUBLIC_SPOTIFY_REDIRECT_URI } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 function randomBase64Url(bytes: number) {
 	const arr = new Uint8Array(bytes);
@@ -22,13 +22,14 @@ function getState(): string | null {
 	return localStorage.getItem('state');
 }
 
+// TODO: refactor this to pull from backend
 export async function getSpotifyAuthUrl() {
 	const state = createAndStoreState();
 	const baseUrl = 'https://accounts.spotify.com/authorize';
 	const params = new URLSearchParams({
 		response_type: 'code',
-		client_id: PUBLIC_SPOTIFY_CLIENT_ID,
-		redirect_uri: PUBLIC_SPOTIFY_REDIRECT_URI,
+		client_id: env.PUBLIC_SPOTIFY_CLIENT_ID,
+		redirect_uri: env.PUBLIC_SPOTIFY_REDIRECT_URI,
 		scope:
 			'user-read-private user-read-email user-library-read user-top-read user-read-recently-played playlist-modify-public playlist-modify-private ugc-image-upload',
 		state

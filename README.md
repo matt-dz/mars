@@ -35,25 +35,39 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 ### Deployment
 
 1. Download the deployment files:
-```bash
+```sh
 wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/docker-compose.yaml
 wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/fileserver.conf
 ```
 
-2. Add your Spotify OAuth credentials for the api service:
+2. Add your Spotify OAuth credentials for the api service. Ensure the variables are also added to the frontend service:
 ```txt
-environment:
-  SPOTIFY_CLIENT_ID: your_client_id
-  SPOTIFY_CLIENT_SECRET: your_client_secret
-  SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth/spotify/callback
+api:
+  environment:
+    SPOTIFY_CLIENT_ID: your_client_id
+    SPOTIFY_CLIENT_SECRET: your_client_secret
+    SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth/spotify
+frontend:
+  environment:
+    PUBLIC_SPOTIFY_CLIENT_ID: your_client_id
+    PUBLIC_SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth
 ```
 
-3. Set the `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DATABASE_PASSWORD` for the api service. Ensure the passwords are secure.
+3. Set the `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DATABASE_PASSWORD` for the api service. Ensure the passwords are secure. Don't forget to set `POSTGRES_PASSWORD` to match `DATABASE_PASSWORD`!
 ```txt
-environment:
-  DATABASE_PASSWORD: your_password
-  ADMIN_EMAIL: joe@mars.com
-  ADMIN_PASSWORD: secure-password
+api:
+  ...
+  environment:
+    DATABASE_PASSWORD: your_password
+    ADMIN_EMAIL: joe@mars.com
+    ADMIN_PASSWORD: secure-password
+  ...
+
+database:
+  ...
+  environment:
+    POSTGRES_PASSWORD: secure-password
+
 ```
 
 4. Start the environment:
