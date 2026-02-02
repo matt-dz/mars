@@ -1,6 +1,6 @@
 # Mars
 
-Your listening history, beautifully organized. Mars automatically creates weekly and monthly playlists from your Spotify listening history.
+Your listening history, beautifully organized. Mars (Music ARchival Software) automatically creates weekly and monthly playlists from your Spotify listening history.
 
 ## Table of Contents
 
