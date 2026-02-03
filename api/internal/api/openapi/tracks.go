@@ -14,15 +14,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (s Server) GetApiTracksTop(
-	ctx context.Context, request GetApiTracksTopRequestObject) (
-	GetApiTracksTopResponseObject, error,
-) {
+func (s Server) GetApiMeTracksTop(
+	ctx context.Context, request GetApiMeTracksTopRequestObject,
+) (GetApiMeTracksTopResponseObject, error) {
 	reqid := requestid.FromContext(ctx)
 	userid, err := tokens.UserIDFromContext(ctx)
 	if err != nil {
 		s.Env.Logger.ErrorContext(ctx, "failed to get userid", slog.Any("error", err))
-		return GetApiTracksTop500JSONResponse{
+		return GetApiMeTracksTop500JSONResponse{
 			Message: "internal server error",
 			Status:  apierror.InternalServerError.Status(),
 			Code:    apierror.InternalServerError.String(),
@@ -54,7 +53,7 @@ func (s Server) GetApiTracksTop(
 
 	if endTime < startTime {
 		s.Env.Logger.ErrorContext(ctx, "end time is before start time")
-		return GetApiTracksTop400JSONResponse{
+		return GetApiMeTracksTop400JSONResponse{
 			Message: "end should be after start",
 			Status:  apierror.BadRequest.Status(),
 			Code:    apierror.BadRequest.String(),
@@ -77,14 +76,14 @@ func (s Server) GetApiTracksTop(
 	})
 	if err != nil {
 		s.Env.Logger.ErrorContext(ctx, "failed to get tracks", slog.Any("error", err))
-		return GetApiTracksTop500JSONResponse{
+		return GetApiMeTracksTop500JSONResponse{
 			Message: "internal server error",
 			Status:  apierror.InternalServerError.Status(),
 			Code:    apierror.InternalServerError.String(),
 			ErrorId: reqid,
 		}, nil
 	}
-	resp := GetApiTracksTop200JSONResponse{
+	resp := GetApiMeTracksTop200JSONResponse{
 		Tracks: make([]PlaylistTrack, len(tracks)),
 	}
 	for i, t := range tracks {

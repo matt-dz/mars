@@ -707,7 +707,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-  /api/tracks/top:
+  /api/me/tracks/top:
     get:
       summary: Get top tracks for a user within a time range.
       tags:
