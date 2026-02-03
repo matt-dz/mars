@@ -16,6 +16,9 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 - [x] **Play Count Tracking**: See how many times you've listened to each track
 - [x] **Spotify Integration**: Seamless OAuth integration with automatic token refresh
 - [x] **Export to Spotify**: Add generated playlists directly to your Spotify account
+- [x] **Top Tracks View**: View your most-played tracks with flexible time period filtering
+  - Past 24 hours, 7 days, month-to-date, year-to-date
+  - Custom date range selection with intuitive date picker
 - [ ] **Custom Playlists**: Create playlists for any date range
 
 ## Tech Stack
