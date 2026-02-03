@@ -5,3 +5,5 @@ dev/*
 .env.**
 !.env.backend.example
 !.env.frontend.example
+
+.claude
