@@ -2,12 +2,16 @@
 	import ProfileWidget from './ProfileWidget.svelte';
 	import type { User } from '$lib/api/types';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 
 	let { user }: { user: User } = $props();
+
+	const isPlaylistsActive = $derived(page.url.pathname === '/home');
+	const isTopTracksActive = $derived(page.url.pathname === '/top-tracks');
 </script>
 
 <header class="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-lg">
-	<div class="container mx-auto flex h-16 items-center justify-between px-4">
+	<div class="container mx-auto flex h-16 items-center justify-between gap-6 px-4">
 		<a
 			href={resolve('/home')}
 			class="group flex items-center gap-2 transition-opacity hover:opacity-80"
@@ -30,6 +34,26 @@
 				mars
 			</span>
 		</a>
+
+		<nav class="flex flex-1 items-center gap-6">
+			<a
+				href={resolve('/home')}
+				class="relative text-sm font-medium transition-colors {isPlaylistsActive
+					? 'text-foreground after:absolute after:bottom-[-1.1rem] after:left-0 after:h-0.5 after:w-full after:bg-gradient-to-r after:from-primary after:to-destructive/80'
+					: 'text-muted-foreground hover:text-foreground'}"
+			>
+				Playlists
+			</a>
+			<a
+				href={resolve('/top-tracks')}
+				class="relative text-sm font-medium transition-colors {isTopTracksActive
+					? 'text-foreground after:absolute after:bottom-[-1.1rem] after:left-0 after:h-0.5 after:w-full after:bg-gradient-to-r after:from-primary after:to-destructive/80'
+					: 'text-muted-foreground hover:text-foreground'}"
+			>
+				Top Tracks
+			</a>
+		</nav>
+
 		<ProfileWidget {user} />
 	</div>
 </header>

@@ -55,3 +55,9 @@ export const SpotifyPlaylistSchema = z.object({
 });
 
 export type SpotifyPlaylist = z.infer<typeof SpotifyPlaylistSchema>;
+
+export const TopTracksSchema = z.object({
+	tracks: z.array(TrackSchema)
+});
+
+export type TopTracks = z.infer<typeof TopTracksSchema>;
