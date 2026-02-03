@@ -281,6 +281,18 @@ type GetApiPlaylistsIdParams struct {
 	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
 }
 
+// GetApiTracksTopParams defines parameters for GetApiTracksTop.
+type GetApiTracksTopParams struct {
+	// Start Start of time range (unix time) - defaults to 24 hours ago.
+	Start *int64 `form:"start,omitempty" json:"start,omitempty"`
+
+	// End End of time range (unix time) - defaults to now.
+	End *int64 `form:"end,omitempty" json:"end,omitempty"`
+
+	// Access Access token
+	Access *AccessTokenHeader `form:"access,omitempty" json:"access,omitempty"`
+}
+
 // GetApiUsersParams defines parameters for GetApiUsers.
 type GetApiUsersParams struct {
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -503,6 +515,9 @@ type ClientInterface interface {
 
 	// GetApiSpotifyStatus request
 	GetApiSpotifyStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiTracksTop request
+	GetApiTracksTop(ctx context.Context, params *GetApiTracksTopParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiUsers request
 	GetApiUsers(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -762,6 +777,18 @@ func (c *Client) GetApiPlaylistsId(ctx context.Context, id openapi_types.UUID, p
 
 func (c *Client) GetApiSpotifyStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiSpotifyStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiTracksTop(ctx context.Context, params *GetApiTracksTopParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiTracksTopRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1559,6 +1586,88 @@ func NewGetApiSpotifyStatusRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetApiTracksTopRequest generates requests for GetApiTracksTop
+func NewGetApiTracksTopRequest(server string, params *GetApiTracksTopParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/tracks/top")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Start != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "start", runtime.ParamLocationQuery, *params.Start); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.End != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "end", runtime.ParamLocationQuery, *params.End); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.Access != nil {
+			var cookieParam0 string
+
+			cookieParam0, err = runtime.StyleParamWithLocation("simple", true, "access", runtime.ParamLocationCookie, *params.Access)
+			if err != nil {
+				return nil, err
+			}
+
+			cookie0 := &http.Cookie{
+				Name:  "access",
+				Value: cookieParam0,
+			}
+			req.AddCookie(cookie0)
+		}
+	}
+	return req, nil
+}
+
 // NewGetApiUsersRequest generates requests for GetApiUsers
 func NewGetApiUsersRequest(server string, params *GetApiUsersParams) (*http.Request, error) {
 	var err error
@@ -1726,6 +1835,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetApiSpotifyStatusWithResponse request
 	GetApiSpotifyStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiSpotifyStatusResponse, error)
+
+	// GetApiTracksTopWithResponse request
+	GetApiTracksTopWithResponse(ctx context.Context, params *GetApiTracksTopParams, reqEditors ...RequestEditorFn) (*GetApiTracksTopResponse, error)
 
 	// GetApiUsersWithResponse request
 	GetApiUsersWithResponse(ctx context.Context, params *GetApiUsersParams, reqEditors ...RequestEditorFn) (*GetApiUsersResponse, error)
@@ -2099,6 +2211,32 @@ func (r GetApiSpotifyStatusResponse) StatusCode() int {
 	return 0
 }
 
+type GetApiTracksTopResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Tracks []PlaylistTrack `json:"tracks"`
+	}
+	JSON400 *Error
+	JSON500 *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiTracksTopResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiTracksTopResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetApiUsersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2314,6 +2452,15 @@ func (c *ClientWithResponses) GetApiSpotifyStatusWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseGetApiSpotifyStatusResponse(rsp)
+}
+
+// GetApiTracksTopWithResponse request returning *GetApiTracksTopResponse
+func (c *ClientWithResponses) GetApiTracksTopWithResponse(ctx context.Context, params *GetApiTracksTopParams, reqEditors ...RequestEditorFn) (*GetApiTracksTopResponse, error) {
+	rsp, err := c.GetApiTracksTop(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiTracksTopResponse(rsp)
 }
 
 // GetApiUsersWithResponse request returning *GetApiUsersResponse
@@ -2981,6 +3128,48 @@ func ParseGetApiSpotifyStatusResponse(rsp *http.Response) (*GetApiSpotifyStatusR
 	return response, nil
 }
 
+// ParseGetApiTracksTopResponse parses an HTTP response from a GetApiTracksTopWithResponse call
+func ParseGetApiTracksTopResponse(rsp *http.Response) (*GetApiTracksTopResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiTracksTopResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Tracks []PlaylistTrack `json:"tracks"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetApiUsersResponse parses an HTTP response from a GetApiUsersWithResponse call
 func ParseGetApiUsersResponse(rsp *http.Response) (*GetApiUsersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3082,6 +3271,9 @@ type ServerInterface interface {
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request)
+	// Get top tracks for a user within a time range.
+	// (GET /api/tracks/top)
+	GetApiTracksTop(w http.ResponseWriter, r *http.Request, params GetApiTracksTopParams)
 	// List users
 	// (GET /api/users)
 	GetApiUsers(w http.ResponseWriter, r *http.Request, params GetApiUsersParams)
@@ -3178,6 +3370,12 @@ func (_ Unimplemented) GetApiPlaylistsId(w http.ResponseWriter, r *http.Request,
 // Get Spotify OAuth2.0 status.
 // (GET /api/spotify/status)
 func (_ Unimplemented) GetApiSpotifyStatus(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get top tracks for a user within a time range.
+// (GET /api/tracks/top)
+func (_ Unimplemented) GetApiTracksTop(w http.ResponseWriter, r *http.Request, params GetApiTracksTopParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3798,6 +3996,62 @@ func (siw *ServerInterfaceWrapper) GetApiSpotifyStatus(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// GetApiTracksTop operation middleware
+func (siw *ServerInterfaceWrapper) GetApiTracksTop(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerTokenAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetApiTracksTopParams
+
+	// ------------- Optional query parameter "start" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "start", r.URL.Query(), &params.Start)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "start", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "end" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "end", r.URL.Query(), &params.End)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "end", Err: err})
+		return
+	}
+
+	{
+		var cookie *http.Cookie
+
+		if cookie, err = r.Cookie("access"); err == nil {
+			var value AccessTokenHeader
+			err = runtime.BindStyledParameterWithOptions("simple", "access", cookie.Value, &value, runtime.BindStyledParameterOptions{Explode: true, Required: false})
+			if err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access", Err: err})
+				return
+			}
+			params.Access = &value
+
+		}
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetApiTracksTop(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetApiUsers operation middleware
 func (siw *ServerInterfaceWrapper) GetApiUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -4003,6 +4257,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/spotify/status", wrapper.GetApiSpotifyStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/tracks/top", wrapper.GetApiTracksTop)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/users", wrapper.GetApiUsers)
@@ -4669,6 +4926,43 @@ func (response GetApiSpotifyStatus500JSONResponse) VisitGetApiSpotifyStatusRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetApiTracksTopRequestObject struct {
+	Params GetApiTracksTopParams
+}
+
+type GetApiTracksTopResponseObject interface {
+	VisitGetApiTracksTopResponse(w http.ResponseWriter) error
+}
+
+type GetApiTracksTop200JSONResponse struct {
+	Tracks []PlaylistTrack `json:"tracks"`
+}
+
+func (response GetApiTracksTop200JSONResponse) VisitGetApiTracksTopResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiTracksTop400JSONResponse Error
+
+func (response GetApiTracksTop400JSONResponse) VisitGetApiTracksTopResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetApiTracksTop500JSONResponse Error
+
+func (response GetApiTracksTop500JSONResponse) VisitGetApiTracksTopResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetApiUsersRequestObject struct {
 	Params GetApiUsersParams
 }
@@ -4769,6 +5063,9 @@ type StrictServerInterface interface {
 	// Get Spotify OAuth2.0 status.
 	// (GET /api/spotify/status)
 	GetApiSpotifyStatus(ctx context.Context, request GetApiSpotifyStatusRequestObject) (GetApiSpotifyStatusResponseObject, error)
+	// Get top tracks for a user within a time range.
+	// (GET /api/tracks/top)
+	GetApiTracksTop(ctx context.Context, request GetApiTracksTopRequestObject) (GetApiTracksTopResponseObject, error)
 	// List users
 	// (GET /api/users)
 	GetApiUsers(ctx context.Context, request GetApiUsersRequestObject) (GetApiUsersResponseObject, error)
@@ -5225,6 +5522,32 @@ func (sh *strictHandler) GetApiSpotifyStatus(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetApiSpotifyStatusResponseObject); ok {
 		if err := validResponse.VisitGetApiSpotifyStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetApiTracksTop operation middleware
+func (sh *strictHandler) GetApiTracksTop(w http.ResponseWriter, r *http.Request, params GetApiTracksTopParams) {
+	var request GetApiTracksTopRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetApiTracksTop(ctx, request.(GetApiTracksTopRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetApiTracksTop")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetApiTracksTopResponseObject); ok {
+		if err := validResponse.VisitGetApiTracksTopResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

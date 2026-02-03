@@ -63,7 +63,7 @@ func (s Server) PostApiPlaylists(
 	// Query the data
 	s.Env.Logger.DebugContext(ctx,
 		"querying tracks within range", slog.Group("range", slog.Time("start", startDate), slog.Time("end", endDate)))
-	rows, err := s.Env.Database.ListensByTrackInRange(ctx, database.ListensByTrackInRangeParams{
+	rows, err := s.Env.Database.TopTrackIDsByUserInRange(ctx, database.TopTrackIDsByUserInRangeParams{
 		UserID: userid,
 		StartDate: pgtype.Timestamptz{
 			Time:  startDate,

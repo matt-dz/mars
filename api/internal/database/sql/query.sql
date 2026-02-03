@@ -177,7 +177,7 @@ INSERT INTO track_listens (user_id, track_id, played_at)
 ON CONFLICT (user_id, track_id, played_at)
   DO NOTHING;
 
--- name: ListensByTrackInRange :many
+-- name: TopTrackIDsByUserInRange :many
 SELECT
   track_id,
   COUNT(*)::bigint AS listen_count
@@ -192,6 +192,34 @@ GROUP BY
 ORDER BY
   listen_count DESC,
   track_id ASC
+LIMIT 50;
+
+-- name: TopTracksByUserInRange :many
+SELECT
+  tl.track_id,
+  t.name,
+  t.artists,
+  t.href,
+  t.uri,
+  t.image_url,
+  COUNT(*)::bigint AS listen_count
+FROM
+  track_listens tl
+  JOIN tracks t ON t.id = tl.track_id
+WHERE
+  tl.user_id = $1
+  AND tl.played_at >= @start_date::timestamptz
+  AND tl.played_at < @end_date::timestamptz
+GROUP BY
+  tl.track_id,
+  t.name,
+  t.artists,
+  t.href,
+  t.uri,
+  t.image_url
+ORDER BY
+  listen_count DESC,
+  tl.track_id ASC
 LIMIT 50;
 
 -- name: CreatePlaylist :one

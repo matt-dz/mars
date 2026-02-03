@@ -437,55 +437,6 @@ func (q *Queries) GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUI
 	return expires_at, err
 }
 
-const listensByTrackInRange = `-- name: ListensByTrackInRange :many
-SELECT
-  track_id,
-  COUNT(*)::bigint AS listen_count
-FROM
-  track_listens
-WHERE
-  user_id = $1
-  AND played_at >= $2::timestamptz
-  AND played_at < $3::timestamptz
-GROUP BY
-  track_id
-ORDER BY
-  listen_count DESC,
-  track_id ASC
-LIMIT 50
-`
-
-type ListensByTrackInRangeParams struct {
-	UserID    uuid.UUID
-	StartDate pgtype.Timestamptz
-	EndDate   pgtype.Timestamptz
-}
-
-type ListensByTrackInRangeRow struct {
-	TrackID     string
-	ListenCount int64
-}
-
-func (q *Queries) ListensByTrackInRange(ctx context.Context, arg ListensByTrackInRangeParams) ([]ListensByTrackInRangeRow, error) {
-	rows, err := q.db.Query(ctx, listensByTrackInRange, arg.UserID, arg.StartDate, arg.EndDate)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListensByTrackInRangeRow
-	for rows.Next() {
-		var i ListensByTrackInRangeRow
-		if err := rows.Scan(&i.TrackID, &i.ListenCount); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const ping = `-- name: Ping :exec
 SELECT
   1
@@ -512,6 +463,128 @@ func (q *Queries) ServiceAccountExists(ctx context.Context) (bool, error) {
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const topTrackIDsByUserInRange = `-- name: TopTrackIDsByUserInRange :many
+SELECT
+  track_id,
+  COUNT(*)::bigint AS listen_count
+FROM
+  track_listens
+WHERE
+  user_id = $1
+  AND played_at >= $2::timestamptz
+  AND played_at < $3::timestamptz
+GROUP BY
+  track_id
+ORDER BY
+  listen_count DESC,
+  track_id ASC
+LIMIT 50
+`
+
+type TopTrackIDsByUserInRangeParams struct {
+	UserID    uuid.UUID
+	StartDate pgtype.Timestamptz
+	EndDate   pgtype.Timestamptz
+}
+
+type TopTrackIDsByUserInRangeRow struct {
+	TrackID     string
+	ListenCount int64
+}
+
+func (q *Queries) TopTrackIDsByUserInRange(ctx context.Context, arg TopTrackIDsByUserInRangeParams) ([]TopTrackIDsByUserInRangeRow, error) {
+	rows, err := q.db.Query(ctx, topTrackIDsByUserInRange, arg.UserID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TopTrackIDsByUserInRangeRow
+	for rows.Next() {
+		var i TopTrackIDsByUserInRangeRow
+		if err := rows.Scan(&i.TrackID, &i.ListenCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const topTracksByUserInRange = `-- name: TopTracksByUserInRange :many
+SELECT
+  tl.track_id,
+  t.name,
+  t.artists,
+  t.href,
+  t.uri,
+  t.image_url,
+  COUNT(*)::bigint AS listen_count
+FROM
+  track_listens tl
+  JOIN tracks t ON t.id = tl.track_id
+WHERE
+  tl.user_id = $1
+  AND tl.played_at >= $2::timestamptz
+  AND tl.played_at < $3::timestamptz
+GROUP BY
+  tl.track_id,
+  t.name,
+  t.artists,
+  t.href,
+  t.uri,
+  t.image_url
+ORDER BY
+  listen_count DESC,
+  tl.track_id ASC
+LIMIT 50
+`
+
+type TopTracksByUserInRangeParams struct {
+	UserID    uuid.UUID
+	StartDate pgtype.Timestamptz
+	EndDate   pgtype.Timestamptz
+}
+
+type TopTracksByUserInRangeRow struct {
+	TrackID     string
+	Name        string
+	Artists     []string
+	Href        string
+	Uri         string
+	ImageUrl    pgtype.Text
+	ListenCount int64
+}
+
+func (q *Queries) TopTracksByUserInRange(ctx context.Context, arg TopTracksByUserInRangeParams) ([]TopTracksByUserInRangeRow, error) {
+	rows, err := q.db.Query(ctx, topTracksByUserInRange, arg.UserID, arg.StartDate, arg.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TopTracksByUserInRangeRow
+	for rows.Next() {
+		var i TopTracksByUserInRangeRow
+		if err := rows.Scan(
+			&i.TrackID,
+			&i.Name,
+			&i.Artists,
+			&i.Href,
+			&i.Uri,
+			&i.ImageUrl,
+			&i.ListenCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :exec

@@ -30,6 +30,8 @@ tags:
     description: Spotify endpoints
   - name: Playlists
     description: Playlist endpoints
+  - name: Tracks
+    description: Track endpoints
 
 paths:
   /api/openapi.yaml:
@@ -694,6 +696,59 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           description: Not Found - User does not have a spotify integration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/tracks/top:
+    get:
+      summary: Get top tracks for a user within a time range.
+      tags:
+        - Tracks
+      description: >
+        Get the top tracks listened to within a given time range for a user.
+        At most 50 tracks will be returned.
+      parameters:
+        - in: query
+          name: start
+          required: false
+          description: Start of time range (unix time) - defaults to 24 hours ago.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - in: query
+          name: end
+          required: false
+          description: End of time range (unix time) - defaults to now.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - $ref: "#/components/parameters/AccessTokenHeader"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlaylistTrack"
+                required:
+                  - tracks
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:

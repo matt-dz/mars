@@ -29,9 +29,10 @@ type Querier interface {
 	GetUserSpotifyId(ctx context.Context, id uuid.UUID) (pgtype.Text, error)
 	GetUserSpotifyRefreshToken(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserSpotifyTokenExpiration(ctx context.Context, id uuid.UUID) (pgtype.Timestamptz, error)
-	ListensByTrackInRange(ctx context.Context, arg ListensByTrackInRangeParams) ([]ListensByTrackInRangeRow, error)
 	Ping(ctx context.Context) error
 	ServiceAccountExists(ctx context.Context) (bool, error)
+	TopTrackIDsByUserInRange(ctx context.Context, arg TopTrackIDsByUserInRangeParams) ([]TopTrackIDsByUserInRangeRow, error)
+	TopTracksByUserInRange(ctx context.Context, arg TopTracksByUserInRangeParams) ([]TopTracksByUserInRangeRow, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) error
 	UpdateUserSpotifyID(ctx context.Context, arg UpdateUserSpotifyIDParams) error
 	UpdateUserSpotifyTokens(ctx context.Context, arg UpdateUserSpotifyTokensParams) error
