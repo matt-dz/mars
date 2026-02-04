@@ -49,33 +49,26 @@ wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/docke
 wget https://raw.githubusercontent.com/matt-dz/mars/refs/heads/main/docker/fileserver.conf
 ```
 
-2. Add your Spotify OAuth credentials for the api service. Ensure the variables are also added to the frontend service:
+2. Add your Spotify OAuth credentials for the api service:
 ```txt
 api:
   environment:
     SPOTIFY_CLIENT_ID: your_client_id
     SPOTIFY_CLIENT_SECRET: your_client_secret
     SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth/spotify
-frontend:
-  environment:
-    PUBLIC_SPOTIFY_CLIENT_ID: your_client_id
-    PUBLIC_SPOTIFY_REDIRECT_URI: http://localhost:8080/api/oauth
 ```
 
 3. Set the `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `DATABASE_PASSWORD` for the api service. Ensure the passwords are secure. Don't forget to set `POSTGRES_PASSWORD` to match `DATABASE_PASSWORD`!
 ```txt
 api:
-  ...
   environment:
     DATABASE_PASSWORD: your_password
     ADMIN_EMAIL: joe@mars.com
-    ADMIN_PASSWORD: secure-password
-  ...
+    ADMIN_PASSWORD: secure-password # ensure this matches POSTGRES_PASSWORD in database
 
 database:
-  ...
   environment:
-    POSTGRES_PASSWORD: secure-password
+    POSTGRES_PASSWORD: secure-password # ensure this matches ADMIN_PASSWORD in api
 
 ```
 
