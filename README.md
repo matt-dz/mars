@@ -21,7 +21,7 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 - [x] **Top Tracks View**: View your most-played tracks with flexible time period filtering
   - Past 24 hours, 7 days, month-to-date, year-to-date
   - Custom date range selection with intuitive date picker
-  <img width="1728" height="910" alt="image" src="https://github.com/user-attachments/assets/7226672f-b307-44b2-bfbf-a38e9544e787" />
+  <img width="1728" height="910" alt="image" src="https://github.com/user-attachments/assets/84ca8c08-4c46-439a-b2eb-f2c6f4d67947" />
     
 - [x] **Spotify Integration**: Seamless OAuth integration with automatic token refresh
 - [x] **Export to Spotify**: Add generated playlists directly to your Spotify account
