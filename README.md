@@ -13,12 +13,18 @@ Your listening history, beautifully organized. Mars (Music ARchival Software) au
 ## Features
 
 - [x] **Automatic Playlist Generation**: Weekly and monthly playlists created from your Spotify listening history
+  <img width="1728" height="910" alt="image" src="https://github.com/user-attachments/assets/4c69a820-d565-45fb-910c-5915ba1c40f3" />
+
 - [x] **Play Count Tracking**: See how many times you've listened to each track
-- [x] **Spotify Integration**: Seamless OAuth integration with automatic token refresh
-- [x] **Export to Spotify**: Add generated playlists directly to your Spotify account
+  <img width="1728" height="910" alt="image" src="https://github.com/user-attachments/assets/5f0b08de-ce62-4b8d-942f-08b1bb694432" />
+  
 - [x] **Top Tracks View**: View your most-played tracks with flexible time period filtering
   - Past 24 hours, 7 days, month-to-date, year-to-date
   - Custom date range selection with intuitive date picker
+  <img width="1728" height="910" alt="image" src="https://github.com/user-attachments/assets/7226672f-b307-44b2-bfbf-a38e9544e787" />
+    
+- [x] **Spotify Integration**: Seamless OAuth integration with automatic token refresh
+- [x] **Export to Spotify**: Add generated playlists directly to your Spotify account
 - [ ] **Custom Playlists**: Create playlists for any date range
 
 ## Tech Stack
