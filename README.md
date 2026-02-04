@@ -66,9 +66,9 @@ api:
     ADMIN_EMAIL: joe@mars.com
     ADMIN_PASSWORD: secure-password # ensure this matches POSTGRES_PASSWORD in database
 
-  database:
-    environment:
-      POSTGRES_PASSWORD: secure-password # ensure this matches ADMIN_PASSWORD in api
+database:
+  environment:
+    POSTGRES_PASSWORD: secure-password # ensure this matches ADMIN_PASSWORD in api
 
 ```
 
