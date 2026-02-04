@@ -9,6 +9,12 @@
 
 	let period = $state<'week' | 'month' | 'year' | 'all'>('all');
 	let sortOrder = $state<'asc' | 'desc'>('desc');
+	let playlistType = $state<'all' | 'weekly' | 'monthly' | 'custom'>('all');
+
+	function filterByType(playlists: Playlist[], type: string): Playlist[] {
+		if (type === 'all') return playlists;
+		return playlists.filter((p) => p.type === type);
+	}
 
 	function filterByPeriod(playlists: Playlist[], period: string): Playlist[] {
 		if (period === 'all') return playlists;
@@ -36,7 +42,10 @@
 	}
 
 	let filteredPlaylists = $derived(
-		sortPlaylists(filterByPeriod(data.playlists.playlists, period), sortOrder)
+		sortPlaylists(
+			filterByPeriod(filterByType(data.playlists.playlists, playlistType), period),
+			sortOrder
+		)
 	);
 </script>
 
@@ -52,7 +61,7 @@
 				{filteredPlaylists.length} playlist{filteredPlaylists.length === 1 ? '' : 's'}
 			</p>
 		</div>
-		<PlaylistFilters bind:period bind:sortOrder />
+		<PlaylistFilters bind:period bind:sortOrder bind:playlistType />
 	</div>
 
 	{#if filteredPlaylists.length > 0}
