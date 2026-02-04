@@ -331,7 +331,7 @@ func (s Server) PostApiAuthRefresh(ctx context.Context, request PostApiAuthRefre
 			Valid:  true,
 		},
 		RefreshTokenExpiresAt: pgtype.Timestamptz{
-			Time:  time.Now().Add(tokens.AccessTokenDuration()),
+			Time:  time.Now().Add(tokens.RefreshTokenDuration()),
 			Valid: true,
 		},
 		ID: userid,
