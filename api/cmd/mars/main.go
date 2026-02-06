@@ -180,9 +180,9 @@ func runCreateWeeklyPlaylist(ctx context.Context, logger *slog.Logger, client ma
 			timer.Stop()
 			return
 		case <-timer.C:
-			now = time.Now().In(loc)
-			logger.Info("creating playlists", slog.Time("date", now))
-			err = mars.CreatePlaylist(ctx, client, email, password, "weekly", now.Year(), now.Month(), now.Day())
+			lastWeek := time.Now().In(loc).AddDate(0, 0, -7)
+			logger.Info("creating weekly playlists", slog.Time("date", lastWeek))
+			err = mars.CreatePlaylist(ctx, client, email, password, "weekly", lastWeek.Year(), lastWeek.Month(), lastWeek.Day())
 			if err != nil {
 				logger.Error("failed to create weekly playlist", slog.Any("error", err))
 			} else {
@@ -226,9 +226,10 @@ func runCreateMonthlyPlaylist(
 			timer.Stop()
 			return
 		case <-timer.C:
-			now = time.Now().In(loc)
-			logger.Info("creating playlists", slog.Time("date", now))
-			err = mars.CreatePlaylist(ctx, client, email, password, "monthly", now.Year(), now.Month(), now.Day())
+			lastMonth := time.Now().In(loc).AddDate(0, -1, 0)
+			logger.Info("creating monthly playlists", slog.Time("date", now))
+			err = mars.CreatePlaylist(ctx, client, email, password,
+				"monthly", lastMonth.Year(), lastMonth.Month(), lastMonth.Day())
 			if err != nil {
 				logger.Error("failed to create monthly playlist", slog.Any("error", err))
 			} else {
